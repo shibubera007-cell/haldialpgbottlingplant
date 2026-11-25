@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LPG Plant • Real-Time Monitoring System</title>
+<style>
+/* ================= BASE ================= */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-family:'Segoe UI',Inter,system-ui,-apple-system,Roboto,sans-serif;
+  background:#060a15;color:#e7eefc;overflow-x:hidden;
+}
+:root{
+  --bg:#060a15;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.07);
+  --stroke:rgba(255,255,255,.10);--stroke2:rgba(255,255,255,.18);
+  --cyan:#22d3ee;--violet:#a78bfa;--lime:#a3e635;--amber:#fbbf24;--rose:#fb7185;--blue:#60a5fa;
+  --txt:#e7eefc;--muted:#8798b8;--ok:#34d399;
+}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* animated background */
+body::before{
+  content:'';position:fixed;inset:-20%;z-index:-2;
+  background:
+    radial-gradient(45% 45% at 15% 20%, rgba(34,211,238,.18), transparent 60%),
+    radial-gradient(45% 45% at 85% 15%, rgba(167,139,250,.18), transparent 60%),
+    radial-gradient(50% 50% at 60% 90%, rgba(52,211,153,.13), transparent 60%);
+  animation:drift 22s ease-in-out infinite alternate;filter:blur(20px);
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:46px 46px;mask-image:radial-gradient(circle at 50% 40%,#000,transparent 85%);
+}
+@keyframes drift{from{transform:translate3d(-2%,-2%,0) scale(1)}to{transform:translate3d(3%,3%,0) scale(1.08)}}
+
+.hidden{display:none !important}
+button{font-family:inherit}
+input,select,textarea{font-family:inherit}
+
+/* ================= AUTH ================= */
+.auth-wrap{
+  min-height:100vh;display:grid;place-items:center;padding:28px;
+}
+.auth-card{
+  width:min(980px,100%);display:grid;grid-template-columns:1.05fr .95fr;
+  background:rgba(12,19,36,.72);border:1px solid var(--stroke);border-radius:26px;overflow:hidden;
+  box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;
+  backdrop-filter:blur(22px);animation:pop .6s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+.auth-left{
+  padding:44px 38px;position:relative;
+  background:linear-gradient(150deg,rgba(34,211,238,.14),rgba(167,139,250,.10) 55%,transparent);
+  border-right:1px solid var(--stroke);
+}
+.auth-left h1{margin:14px 0 8px;font-size:30px;letter-spacing:-.5px;line-height:1.15}
+.auth-left h1 span{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.auth-left p{color:var(--muted);font-size:14px;line-height:1.7;margin:0 0 22px}
+.logo-badge{
+  display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:999px;
+  background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.35);
+  font-size:12px;font-weight:700;letter-spacing:1.4px;color:#a5f3fc;text-transform:uppercase;
+}
+.logo-badge .pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.7);animation:ping 1.6s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(52,211,153,.65)}70%{box-shadow:0 0 0 12px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.feat{display:flex;flex-direction:column;gap:11px;margin-top:8px}
+.feat div{display:flex;gap:11px;align-items:flex-start;font-size:13px;color:#c7d4ec}
+.feat i{font-style:normal;width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:8px;background:rgba(255,255,255,.07);font-size:12px}
+.auth-right{padding:38px 34px}
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,.05);padding:5px;border-radius:14px;margin-bottom:22px}
+.tabs button{
+  flex:1;padding:11px 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);
+  font-weight:700;font-size:12.5px;cursor:pointer;transition:.25s;letter-spacing:.3px;
+}
+.tabs button.active{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#06121f;box-shadow:0 8px 22px rgba(34,211,238,.28)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:700}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--stroke);
+  background:rgba(255,255,255,.045);color:var(--txt);font-size:14px;outline:none;transition:.2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(34,211,238,.65);box-shadow:0 0 0 4px rgba(34,211,238,.12);background:rgba(255,255,255,.07)}
+.field select option{background:#0c1324}
+.btn{
+  border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:13.5px;cursor:pointer;
+  transition:transform .15s,box-shadow .2s,filter .2s;display:inline-flex;align-items:center;gap:8px;justify-content:center;
+}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#06121f;box-shadow:0 12px 28px rgba(34,211,238,.25)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--stroke);color:var(--txt)}
+.btn.ghost:hover{background:rgba(255,255,255,.11)}
+.btn.danger{background:rgba(251,113,133,.16);color:#ffc4cc;border:1px solid rgba(251,113,133,.4)}
+.btn.block{width:100%}
+.btn.sm{padding:7px 12px;font-size:12px;border-radius:9px}
+.msg{margin-top:12px;font-size:13px;padding:10px 13px;border-radius:11px;display:none}
+.msg.err{display:block;background:rgba(251,113,133,.14);color:#ffc0c9;border:1px solid rgba(251,113,133,.35)}
+.msg.ok{display:block;background:rgba(52,211,153,.14);color:#a7f3d0;border:1px solid rgba(52,211,153,.35)}
+.hint{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.6}
+
+/* ================= APP SHELL ================= */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.sidebar{
+  border-right:1px solid var(--stroke);padding:20px 14px;display:flex;flex-direction:column;gap:6px;
+  background:rgba(8,13,26,.72);backdrop-filter:blur(16px);position:sticky;top:0;height:100vh;overflow:auto;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px}
+.brand .mark{
+  width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:19px;
+  background:linear-gradient(135deg,var(--cyan),var(--violet));color:#06121f;font-weight:900;
+  box-shadow:0 10px 24px rgba(34,211,238,.3);
+}
+.brand b{display:block;font-size:14px;letter-spacing:.3px}
+.brand small{color:var(--muted);font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;border:1px solid transparent;
+  background:transparent;color:#b9c7e2;font-size:13.2px;font-weight:600;cursor:pointer;text-align:left;transition:.2s;width:100%;
+}
+.nav-item:hover{background:rgba(255,255,255,.055);color:#fff}
+.nav-item.active{
+  background:linear-gradient(90deg,rgba(34,211,238,.18),rgba(167,139,250,.10));
+  border-color:rgba(34,211,238,.35);color:#fff;box-shadow:0 8px 22px rgba(34,211,238,.12);
+}
+.nav-item .ni{width:22px;text-align:center;font-size:15px}
+.side-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--stroke);font-size:11px;color:var(--muted);line-height:1.7}
+
+.main{display:flex;flex-direction:column;min-width:0;padding:0 20px 20px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 4px 14px;flex-wrap:wrap}
+.topbar h1{margin:0;font-size:20px;letter-spacing:-.3px}
+.topbar p{margin:3px 0 0;color:var(--muted);font-size:12.5px}
+.tb-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-pill{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:1.2px;
+  background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);color:#a7f3d0;
+}
+.live-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:ping 1.6s infinite}
+.clock{font-variant-numeric:tabular-nums;font-weight:800;font-size:14px;letter-spacing:.6px;
+  padding:8px 14px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--stroke);color:#cfe0ff}
+.userchip{display:flex;align-items:center;gap:9px;padding:6px 12px 6px 6px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--stroke)}
+.avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:12.5px;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));color:#06121f}
+.userchip b{font-size:12.5px;display:block;line-height:1.2}
+.userchip small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+/* tickers */
+.ticker{
+  overflow:hidden;border-radius:13px;border:1px solid var(--stroke);
+  background:linear-gradient(90deg,rgba(34,211,238,.09),rgba(167,139,250,.07));
+  padding:9px 0;margin:2px 0 14px;position:relative;
+}
+.ticker.bottom{background:linear-gradient(90deg,rgba(52,211,153,.09),rgba(251,191,36,.07));margin:16px 0 0}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:44px;z-index:2;pointer-events:none}
+.ticker::before{left:0;background:linear-gradient(90deg,#070c18,transparent)}
+.ticker::after{right:0;background:linear-gradient(270deg,#070c18,transparent)}
+.ticker-track{display:inline-flex;white-space:nowrap;will-change:transform;animation:marq 40s linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:8px;padding:0 22px;font-size:12.8px;font-weight:600;color:#cfe0ff;border-right:1px solid rgba(255,255,255,.09)}
+.tk b{color:#fff;font-weight:800}
+.tk .pill{font-size:10.5px;padding:2px 8px;border-radius:999px;background:rgba(34,211,238,.18);color:#a5f3fc;font-weight:800}
+
+/* view */
+.view{flex:1;display:flex;flex-direction:column;gap:16px;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* cards */
+.card{
+  background:var(--card);border:1px solid var(--stroke);border-radius:18px;padding:18px;
+  backdrop-filter:blur(14px);position:relative;overflow:hidden;
+}
+.card.hl::before{content:'';position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--violet),transparent)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.card-h h3{margin:0;font-size:14.5px;letter-spacing:.2px}
+.card-h .sub{font-size:11.5px;color:var(--muted)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1150px){.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center}.side-foot{display:none}.brand{padding:0 10px}}
+
+/* KPI */
+.kpi{
+  background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.03));
+  border:1px solid var(--stroke);border-radius:16px;padding:15px 16px;position:relative;overflow:hidden;
+  transition:transform .25s,border-color .25s;
+}
+.kpi:hover{transform:translateY(-3px);border-color:var(--stroke2)}
+.kpi::after{content:'';position:absolute;right:-28px;top:-28px;width:80px;height:80px;border-radius:50%;opacity:.22}
+.kpi.cyan::after{background:var(--cyan)}.kpi.violet::after{background:var(--violet)}
+.kpi.lime::after{background:var(--lime)}.kpi.amber::after{background:var(--amber)}
+.kpi.rose::after{background:var(--rose)}.kpi.blue::after{background:var(--blue)}
+.kpi-l{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:8px}
+.kpi-v{font-size:26px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-u{font-size:12.5px;font-weight:700;color:var(--muted);margin-left:5px}
+.kpi-s{font-size:11.5px;color:var(--muted);margin-top:7px}
+.up{color:var(--ok);font-weight:800}.down{color:var(--rose);font-weight:800}
+
+/* bars */
+.bars{display:flex;align-items:flex-end;gap:7px;height:150px;padding-top:8px}
+.bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.bar-wrap{width:100%;height:112px;display:flex;align-items:flex-end;border-radius:7px;background:rgba(255,255,255,.045);overflow:hidden}
+.bar{width:100%;border-radius:7px 7px 0 0;background:linear-gradient(180deg,var(--cyan),rgba(34,211,238,.25));
+  transition:height .7s cubic-bezier(.2,.9,.3,1.3);min-height:3px}
+.bar.v{background:linear-gradient(180deg,var(--violet),rgba(167,139,250,.25))}
+.bar.l{background:linear-gradient(180deg,var(--lime),rgba(163,230,53,.25))}
+.bar.a{background:linear-gradient(180deg,var(--amber),rgba(251,191,36,.25))}
+.bar-item span{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12.8px}
+th{
+  text-align:left;padding:10px 12px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--stroke);font-weight:800;white-space:nowrap;
+}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);color:#d6e2f7}
+tr:hover td{background:rgba(255,255,255,.03)}
+.table-wrap{overflow:auto;max-height:420px;border-radius:12px}
+.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.4px}
+.tag.ok{background:rgba(52,211,153,.15);color:#a7f3d0}
+.tag.warn{background:rgba(251,191,36,.15);color:#fde68a}
+.tag.bad{background:rgba(251,113,133,.15);color:#fecdd3}
+.tag.info{background:rgba(96,165,250,.15);color:#bfdbfe}
+.tag.mute{background:rgba(255,255,255,.08);color:#b9c7e2}
+
+/* vertical auto-scroll list */
+.vscroll{height:300px;overflow:hidden;position:relative;mask-image:linear-gradient(180deg,transparent,#000 8%,#000 92%,transparent)}
+.vscroll-inner{animation:vmarq 26s linear infinite}
+.vscroll:hover .vscroll-inner{animation-play-state:paused}
+@keyframes vmarq{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.vrow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;margin-bottom:7px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);font-size:12.8px}
+.vrow .hr{font-weight:900;color:var(--cyan);min-width:52px;font-variant-numeric:tabular-nums}
+.vrow .val{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* misc */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+.mini{font-size:11.5px;color:var(--muted)}
+.pillbar{display:flex;gap:6px;flex-wrap:wrap}
+.pillbar button{padding:7px 13px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.04);
+  color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:.2s}
+.pillbar button.active{background:linear-gradient(135deg,var(--cyan),var(--violet));color:#06121f;border-color:transparent}
+.progress{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.progress > div{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .8s}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(3,6,14,.72);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:999;padding:20px;animation:fade .2s}
+.modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;background:#0b1222;
+  border:1px solid var(--stroke2);border-radius:20px;box-shadow:0 40px 100px rgba(0,0,0,.7);animation:pop .3s cubic-bezier(.2,.9,.3,1.2)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--stroke)}
+.modal-head h3{margin:0;font-size:15px}
+.modal-head .x{background:transparent;border:0;color:var(--muted);font-size:17px;cursor:pointer;padding:4px 8px;border-radius:8px}
+.modal-head .x:hover{background:rgba(255,255,255,.08);color:#fff}
+.modal-body{padding:18px 20px;overflow:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--stroke)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid .full{grid-column:1/-1}
+@media(max-width:600px){.fgrid{grid-template-columns:1fr}}
+
+/* toast */
+#toast{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:9px;z-index:2000}
+.toast{padding:12px 17px;border-radius:12px;font-size:13px;font-weight:600;border:1px solid var(--stroke2);
+  background:#101a2e;color:#e7eefc;box-shadow:0 14px 34px rgba(0,0,0,.5);animation:slidein .3s}
+.toast.ok{border-color:rgba(52,211,153,.5)}
+.toast.err{border-color:rgba(251,113,133,.5)}
+@keyframes slidein{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* auth mode split visual */
+.seg{display:flex;gap:8px;margin-bottom:16px}
+.seg button{flex:1;padding:10px;border-radius:11px;border:1px solid var(--stroke);background:rgba(255,255,255,.04);
+  color:var(--muted);font-weight:800;font-size:12px;cursor:pointer}
+.seg button.active{background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(167,139,250,.18));color:#fff;border-color:rgba(34,211,238,.4)}
+.notice{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:12.5px;
+  background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.32);color:#fde68a;margin-bottom:14px}
+.notice b{color:#fff}
+.modal{display:flex!important;flex-direction:column;max-height:92vh}
+.modal-body{overflow-y:auto;flex:1 1 auto;-webkit-overflow-scrolling:touch}
+.modal-foot{position:sticky;bottom:0;flex:none;background:rgba(12,19,36,.98);border-top:1px solid var(--stroke);padding:12px 18px}
+.modal-foot .btn.primary{min-width:150px}
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="authScreen" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-left">
+      <div class="logo-badge"><span class="pulse"></span> Live Plant Telemetry</div>
+      <h1>LPG Plant <span>Realtime<br/>Monitoring System</span></h1>
+      <p>One control room for hourly filling, shift performance, truck movement, manpower and consumables — streamed live to your screen.</p>
+      <div class="feat">
+        <div><i>⏱️</i><span>Hourly &amp; shift-wise filling captured in real time</span></div>
+        <div><i>🚚</i><span>Truck In / Truck Out / Empty Out movement logs</span></div>
+        <div><i>👷</i><span>Manpower split by shift and contractor</span></div>
+        <div><i>📦</i><span>Weekly consumables with variance tracking</span></div>
+        <div><i>📊</i><span>Monthly &amp; weekly analytics with % comparison</span></div>
+        <div><i>🔐</i><span>Role-based access, approvals &amp; correction workflow</span></div>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="tabs" id="authTabs">
+        <button data-tab="admin" class="active">ADMIN LOGIN</button>
+        <button data-tab="user">USER LOGIN</button>
+        <button data-tab="register">REGISTER</button>
+      </div>
+
+      <!-- LOGIN FORM (shared by admin/user tab) -->
+      <form id="loginForm">
+        <div class="field">
+          <label>Username</label>
+          <input id="loginUser" type="text" autocomplete="username" placeholder="e.g. admin" required />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required />
+        </div>
+        <button class="btn primary block" id="loginBtn" type="submit">Sign in as Admin →</button>
+        <div class="msg" id="loginMsg"></div>
+        <div class="hint" id="loginHint">
+          Default local admin → <b>admin / admin123</b>. With Firebase configured, the first registered account becomes the plant admin.
+        </div>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="registerForm" class="hidden">
+        <div class="field">
+          <label>Full Name</label>
+          <input id="regName" type="text" placeholder="Operator name" required />
+        </div>
+        <div class="field">
+          <label>Username</label>
+          <input id="regUser" type="text" placeholder="unique username" required />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="regPass" type="password" placeholder="min 6 characters" minlength="6" required />
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input id="regPass2" type="password" placeholder="repeat password" minlength="6" required />
+        </div>
+        <button class="btn primary block" type="submit">Create Account</button>
+        <div class="msg" id="regMsg"></div>
+        <div class="hint">New accounts stay <b>pending</b> until the admin approves them and assigns dashboard access.</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">⛽</div>
+      <div><b>LPG Plant</b><small>Monitoring</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="side-foot">
+      <div id="fbStatus" style="margin-bottom:6px"></div>
+      <div>Realtime engine · v2.0</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Home Dashboard</h1>
+        <p id="pageSub">Live plant overview</p>
+      </div>
+      <div class="tb-right">
+        <div class="live-pill" id="syncPill"><span class="dot"></span> <span id="syncTxt">…</span></div>
+        <div class="clock" id="clock">--:--:--</div>
+        <div class="userchip" id="userChip"></div>
+        <button class="btn ghost sm" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <div class="ticker" id="tickerTop">
+      <div class="ticker-track" id="tickerTopTrack"></div>
+    </div>
+
+    <section id="view" class="view"></section>
+
+    <div class="ticker bottom">
+      <div class="ticker-track" id="tickerBottomTrack"></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- ================= FIREBASE SDK ================= -->
+
+<script>
+/* ============================================================
+   1. FIREBASE CONFIGURATION  ← PASTE YOURS HERE
+   ============================================================ */
+let firebaseConfig = {
+  apiKey:            "PASTE_YOUR_API_KEY",
+  authDomain:        "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId:         "PASTE_YOUR_PROJECT_ID",
+  storageBucket:     "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId:             "PASTE_APP_ID"
+};
+
+let FB_ENABLED = false;
+let fb = { app:null, auth:null, db:null };
+if (FB_ENABLED) {
+  try {
+    fb.app  = firebase.initializeApp(firebaseConfig);
+    fb.auth = firebase.auth();
+    fb.db   = firebase.firestore();
+    console.log('[Firebase] Connected');
+  } catch (e) { console.warn('[Firebase] init failed → local mode', e); }
+}
+
+/* ============================================================
+   2. UTILITIES
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const num = (n, d = 0) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const isoDate = d => new Date(d).toISOString().slice(0, 10);
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const nowHM = () => new Date().toTimeString().slice(0, 5);
+const clampPct = v => Math.max(-999, Math.min(999, v));
+const pctChange = (cur, prev) => (!prev ? (cur ? 100 : 0) : ((cur - prev) / prev) * 100);
+const weekStart = (d = new Date()) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return isoDate(x); };
+const monthStart = (d = new Date()) => isoDate(new Date(d.getFullYear(), d.getMonth(), 1));
+const addDays = (iso, n) => { const d = new Date(iso); d.setDate(d.getDate() + n); return isoDate(d); };
+
+function simpleHash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return 'h' + (h >>> 0).toString(16); }
+async function sha256(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashPw(user, pass) {
+  const s = (user + ':' + pass).toLowerCase();
+  try { if (crypto && crypto.subtle) return await sha256(s); } catch (e) {}
+  return simpleHash(s);
+}
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => { el.style.opacity = 0; el.style.transform = 'translateX(30px)'; el.style.transition = '.3s'; setTimeout(() => el.remove(), 320); }, 2800);
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* ============================================================
+   3. DATA MODEL / STORE
+   ============================================================ */
+const COLLECTIONS = ['users', 'plant', 'manpower', 'trucks', 'hourly', 'shift', 'weekly', 'tasks', 'audit', 'stops', 'contractors'];
+const LS_KEY = 'lpg_plant_db_v2';
+
+const METRICS = [
+  { k:'totalCyl', l:'Total Cylinders Filled', u:'cyl' },
+  { k:'c142',     l:'14.2 Kg Cylinders',      u:'cyl' },
+  { k:'c19',      l:'19 Kg Cylinders',        u:'cyl' },
+  { k:'c35',      l:'35 Kg Cylinders',        u:'cyl' },
+  { k:'c47',      l:'47 Kg Cylinders',        u:'cyl' },
+  { k:'c5',       l:'5 Kg Cylinders',         u:'cyl' },
+  { k:'c422',     l:'422 Kg Cylinders',       u:'cyl' },
+  { k:'totalMT',  l:'Total Production',       u:'MT', step:'0.01' },
+  { k:'accuracy', l:'Filling Accuracy',       u:'%',  step:'0.01' },
+  { k:'dptGen',   l:'DPT Cylinder Generated', u:'cyl' },
+  { k:'dptRecv',  l:'DPT Received from Shed', u:'cyl' },
+  { k:'hrGen',    l:'HR Generated',           u:'cyl' },
+  { k:'evac',     l:'Cylinder Evacuation Done',u:'cyl' },
+  { k:'sqc',      l:'SQC Done',               u:'cyl' },
+  { k:'loss',     l:'Filling Loss',           u:'kg', step:'0.01' },
+];
+
+const CONSUMABLES = [
+  { k:'scValve',   l:'SC Valve',            u:'pcs' },
+  { k:'delrinCap', l:'Delrin Cap',          u:'pcs' },
+  { k:'oRing',     l:'O-Ring (SC Valve)',   u:'pcs' },
+  { k:'tes',       l:'TES',                 u:'pcs' },
+  { k:'soapDrum',  l:'Soap Drum',           u:'pcs' },
+  { k:'lotValve',  l:'LOT Valve',           u:'pcs' },
+  { k:'dpr',       l:'DPR',                 u:'pcs' },
+  { k:'redPaint',  l:'Red Paint',           u:'ltr' },
+  { k:'primer',    l:'Primer Paint',        u:'ltr' },
+  { k:'thinner',   l:'Thinner',             u:'ltr' },
+];
+
+const PAGES = [
+  { id:'home',      label:'Home Dashboard',     icon:'🏭', sub:'Plant status, manpower & live overview' },
+  { id:'trucks',    label:'Truck Movement',     icon:'🚚', sub:'Truck In / Truck Out / Empty Out' },
+  { id:'hourly',    label:'Hourly Filling',     icon:'⏱️', sub:'Auto-scrolling hourly production' },
+  { id:'shift',     label:'Shift Filling',      icon:'🧾', sub:'Shift A & Shift B full metrics' },
+  { id:'weekly',    label:'Weekly Consumables', icon:'📦', sub:'Consumable consumption tracking' },
+  { id:'manpower',  label:'Manpower',           icon:'👷', sub:'Contractor & shift wise manpower in / out' },
+  { id:'stops',     label:'Plant Stop',         icon:'⛔', sub:'Stop reasons, resume time & downtime' },
+  { id:'search',    label:'Search & Filter',    icon:'🔎', sub:'Keyword search & filters across all data' },
+  { id:'plantTimes',label:'Set Plant Start/Close Time (Home)', icon:'🕒', sub:'', hidden:true },
+  { id:'analytics', label:'Analytics',          icon:'📊', sub:'Weekly / monthly % comparison' },
+  { id:'reports',   label:'Admin Reports',     icon:'📑', sub:'Weekly / monthly reports, export & Excel import', adminOnly:true },
+  { id:'settings',  label:'Settings',          icon:'🛠️', sub:'Firebase configuration (admin only)', adminOnly:true },
+  { id:'admin',     label:'Admin Panel',        icon:'⚙️', sub:'Users, permissions, data & corrections', adminOnly:true },
+];
+
+const Store = {
+  cols: {},
+  subs: {},
+  readyPromises: {},
+
+  get(col) { return this.cols[col] || []; },
+
+  on(col, fn) { (this.subs[col] = this.subs[col] || []).push(fn); },
+
+  ready(col) {
+    if (this.cols[col] !== undefined) return Promise.resolve();
+    return new Promise(res => { (this.readyPromises[col] = this.readyPromises[col] || []).push(res); });
+  },
+
+  _fire(col) {
+    (this.subs[col] || []).forEach(f => { try { f(); } catch (e) { console.warn(e); } });
+    (this.readyPromises[col] || []).forEach(r => r());
+    this.readyPromises[col] = [];
+  },
+
+  async initLocal() {
+    let raw = null;
+    try { raw = localStorage.getItem(LS_KEY); } catch (e) {}
+    this.cols = raw ? JSON.parse(raw) : {};
+    COLLECTIONS.forEach(c => { if (!Array.isArray(this.cols[c])) this.cols[c] = []; });
+    COLLECTIONS.forEach(c => this._fire(c));
+  },
+
+  subscribeAll() {
+    if (!FB_ENABLED) return;
+    COLLECTIONS.forEach(col => {
+      fb.db.collection(storeKey()).doc(col).onSnapshot(snap => {
+        this.cols[col] = snap.exists ? (snap.data().items || []) : [];
+        lastSync = Date.now(); syncErr = '';
+        this._fire(col);
+      }, err => { syncErr = err.message || 'snapshot error'; console.warn('[snapshot]', col, err.message); });
+    });
+  },
+
+  async save(col, arr) {
+    this.cols[col] = arr;
+    if (FB_ENABLED) {
+      try { await fb.db.collection(storeKey()).doc(col).set({ items: arr }); }
+      catch (e) { syncErr = e.message || 'save failed'; console.warn('firestore save failed', e); }
+    } else {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(this.cols)); } catch (e) {}
+    }
+    this._fire(col);
+  },
+
+  async upsert(col, item) {
+    const arr = [...this.get(col)];
+    const i = arr.findIndex(x => x.id === item.id);
+    const rec = { ...item, id: item.id || uid(), _by: currentUser ? currentUser.username : 'system', _at: Date.now() };
+    if (i >= 0) arr[i] = { ...arr[i], ...rec };
+    else arr.push(rec);
+    await this.save(col, arr);
+    return rec;
+  },
+
+  async remove(col, id) { await this.save(col, this.get(col).filter(x => x.id !== id)); },
+};
+
+/* audit trail */
+async function audit(action, detail) {
+  const arr = [...Store.get('audit')];
+  arr.unshift({ id: uid(), at: Date.now(), by: currentUser ? currentUser.username : 'system', action, detail });
+  await Store.save('audit', arr.slice(0, 400));
+}
+
+/* ============================================================
+   4. AUTH
+   ============================================================ */
+let currentUser = null;
+let authTab = 'admin';
+
+const toEmail = u => u.toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@lpgplant.local';
+
+function setAuthTab(tab) {
+  authTab = tab;
+  $$('#authTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  const isReg = tab === 'register';
+  $('#loginForm').classList.toggle('hidden', isReg);
+  $('#registerForm').classList.toggle('hidden', !isReg);
+  const btn = $('#loginBtn');
+  if (btn) btn.textContent = tab === 'admin' ? 'Sign in as Admin →' : 'Sign in as User →';
+  $('#loginMsg').className = 'msg';
+  $('#regMsg').className = 'msg';
+}
+
+$$('#authTabs button').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.tab)));
+
+/* ---- LOGIN ---- */
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('#loginBtn'), msg = $('#loginMsg');
+  const username = $('#loginUser').value.trim();
+  const password = $('#loginPass').value;
+  const wantAdmin = authTab === 'admin';
+  if (!wantAdmin && !isSetupComplete()) { msg.className = 'msg err'; msg.textContent = 'System setup is pending. The administrator must sign in first and configure Firebase.'; return; }
+  msg.className = 'msg';
+
+  if (!username || !password) { msg.className = 'msg err'; msg.textContent = 'Enter username and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    let profile = null;
+
+    if (FB_ENABLED) {
+      await fb.auth.signInWithEmailAndPassword(toEmail(username), password);
+      await Store.ready('users');
+      profile = Store.get('users').find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!profile) throw new Error('No profile found for this account. Contact the administrator.');
+    } else {
+      await Store.ready('users');
+      profile = Store.get('users').find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!profile) throw new Error('No such user. Check the username or register.');
+      const h = await hashPw(profile.username, password);
+      if (h !== profile.pass) throw new Error('Incorrect password.');
+    }
+
+    if (!profile.active) throw new Error('Account is pending admin approval.');
+    if (wantAdmin && profile.role !== 'admin') throw new Error('This account does not have admin privileges. Use the User Login tab.');
+
+    currentUser = profile;
+    try { localStorage.setItem('lpg_session', profile.username); } catch (e) {}
+    await enterApp();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = fbFriendly(err, 'Login failed.');
+    $$('.fbResetBox').forEach(b => b.classList.remove('hidden'));
+    btn.disabled = false; btn.textContent = wantAdmin ? 'Sign in as Admin →' : 'Sign in as User →';
+  }
+});
+
+/* ---- REGISTER ---- */
+$('#registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = $('#regMsg');
+  msg.className = 'msg';
+  const name = $('#regName').value.trim();
+  const username = $('#regUser').value.trim();
+  const p1 = $('#regPass').value, p2 = $('#regPass2').value;
+
+  if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) { msg.className = 'msg err'; msg.textContent = 'Username: 3–20 chars, letters/numbers/._- only.'; return; }
+  if (p1.length < 6) { msg.className = 'msg err'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+  if (p1 !== p2) { msg.className = 'msg err'; msg.textContent = 'Passwords do not match.'; return; }
+
+  try {
+    if (FB_ENABLED) {
+      await fb.auth.createUserWithEmailAndPassword(toEmail(username), p1);
+      await Store.ready('users');
+    } else {
+      await Store.ready('users');
+    }
+
+    if (Store.get('users').some(u => u.username.toLowerCase() === username.toLowerCase()))
+      throw new Error('Username already taken.');
+
+    const isFirst = Store.get('users').filter(u => u.role === 'admin').length === 0;
+    const pass = await hashPw(username, p1);
+
+    await Store.upsert('users', {
+      username, name: name || username,
+      role: isFirst ? 'admin' : 'user',
+      active: isFirst,
+      perms: isFirst ? PAGES.map(p => p.id) : ['home'],
+      pass: FB_ENABLED ? null : pass,
+      createdAt: Date.now()
+    });
+
+    await audit('REGISTER', `${username} registered as ${isFirst ? 'ADMIN' : 'user (pending)'}`);
+    msg.className = 'msg ok';
+    msg.textContent = isFirst
+      ? 'Admin account created! You can sign in now.'
+      : 'Account created. Awaiting admin approval & dashboard assignment.';
+    $('#registerForm').reset();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = fbFriendly(err, 'Registration failed.');
+    $$('.fbResetBox').forEach(b => b.classList.remove('hidden'));
+  }
+});
+
+/* ---- SESSION RESTORE ---- */
+async function tryRestore() {
+  let uname = null;
+  try { uname = localStorage.getItem('lpg_session'); } catch (e) {}
+  if (!uname) return false;
+  if (FB_ENABLED) {
+    const u = fb.auth.currentUser;
+    if (!u) return false;
+  }
+  await Store.ready('users');
+  const p = Store.get('users').find(x => x.username.toLowerCase() === uname.toLowerCase());
+  if (p && p.active) { currentUser = p; await enterApp(); return true; }
+  return false;
+}
+
+$('#logoutBtn').addEventListener('click', async () => {
+  try { localStorage.removeItem('lpg_session'); } catch (e) {}
+  if (FB_ENABLED && fb.auth) { try { await fb.auth.signOut(); } catch (e) {} }
+  currentUser = null;
+  $('#app').classList.add('hidden');
+  $('#authScreen').classList.remove('hidden');
+});
+
+/* ============================================================
+   5. APP SHELL
+   ============================================================ */
+const state = { page: 'home', adminTab: 'users', week: weekStart(), analytics: { period: 'monthly', metric: 'totalCyl', group: 'filling' } };
+
+async function enterApp() {
+  $('#authScreen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+
+  const isAdmin = currentUser.role === 'admin';
+  if (!isAdmin && !(currentUser.perms || []).includes('home')) {
+    currentUser.perms = ['home'];
+  }
+  state.page = (isAdmin && !isSetupComplete()) ? 'settings' : 'home';
+  renderUserChip();
+  renderNav();
+  render();
+  startClock();
+  renderTickerLoop();
+  updateSyncPill();
+}
+
+function renderUserChip() {
+  $('#userChip').innerHTML = `
+    <div class="avatar">${esc((currentUser.name || currentUser.username).slice(0, 2).toUpperCase())}</div>
+    <div><b>${esc(currentUser.name || currentUser.username)}</b><small>${esc(currentUser.role)}</small></div>`;
+}
+
+function allowedPages() {
+  const isAdmin = currentUser.role === 'admin';
+  return PAGES.filter(p => p.hidden ? false : p.adminOnly ? isAdmin : (isAdmin || (currentUser.perms || []).includes(p.id) || p.id === 'home'));
+}
+function canEdit(pageId) {
+  return currentUser.role === 'admin' || (currentUser.perms || []).includes(pageId);
+}
+
+function renderNav() {
+  $('#nav').innerHTML = allowedPages().map(p =>
+    `<button class="nav-item ${state.page === p.id ? 'active' : ''}" data-page="${p.id}">
+       <span class="ni">${p.icon}</span>${p.label}
+     </button>`).join('');
+
+  $$('#nav .nav-item').forEach(b => b.addEventListener('click', () => {
+    state.page = b.dataset.page;
+    renderNav(); render();
+  }));
+
+  $('#fbStatus').innerHTML = FB_ENABLED
+    ? `<span class="tag ok">● Firebase Live</span>`
+    : `<span class="tag warn">● Local Mode</span>`;
+}
+
+function startClock() {
+  if (startClock._t) clearInterval(startClock._t);
+  const tick = () => {
+    const d = new Date();
+    $('#clock').textContent = d.toLocaleTimeString('en-GB');
+  };
+  tick();
+  startClock._t = setInterval(tick, 1000);
+}
+
+/* ============================================================
+   6. TICKERS
+   ============================================================ */
+function renderTickerLoop() {
+  if (renderTickerLoop._t) clearInterval(renderTickerLoop._t);
+  renderTickers();
+  renderTickerLoop._t = setInterval(renderTickers, 5000);
+}
+
+function renderTickers() {
+  const d = today();
+  const rows = Store.get('hourly').filter(r => r.date === d).sort((a, b) => String(a.hour).localeCompare(String(b.hour)));
+
+  let top = '';
+  if (!rows.length) {
+    top = `<span class="tk">⏳ <b>No hourly production logged for today yet</b> — waiting for data entry…</span>`;
+  } else {
+    top = rows.map(r => `<span class="tk"><span class="pill">${esc(r.hour)}:00</span> <b>${num(r.totalCyl)}</b> cyl <span style="color:#7dd3fc">|</span> <b>${num(r.totalMT, 2)}</b> MT</span>`).join('');
+  }
+  const topHtml = top + top;
+  $('#tickerTopTrack').innerHTML = topHtml;
+  $('#tickerTopTrack').style.animationDuration = Math.max(18, topHtml.length / 14) + 's';
+
+  // bottom KPI ticker
+  const shifts = Store.get('shift').filter(s => s.date === d);
+  const sum = k => shifts.reduce((a, s) => a + Number(s[k] || 0), 0);
+  const trucks = Store.get('trucks').filter(t => t.date === d);
+  const mp = Store.get('manpower').filter(m => m.date === d && m.direction !== 'OUT').reduce((a, m) => a + Number(m.count || 0), 0);
+  const plant = Store.get('plant').find(p => p.date === d) || {};
+
+  const items = [
+    `🕒 Plant: <b>${plant.startTime || '--:--'}</b> → <b>${plant.closeTime || '--:--'}</b>`,
+    stopTickerText(),
+    `🥇 Total Cylinders: <b>${num(sum('totalCyl'))}</b>`,
+    `⚖️ Production: <b>${num(sum('totalMT'), 2)} MT</b>`,
+    `🎯 Accuracy: <b>${num(sum('accuracy') / (shifts.length || 1), 2)}%</b>`,
+    `🧯 Filling Loss: <b>${num(sum('loss'), 2)} kg</b>`,
+    `🔄 DPT Generated: <b>${num(sum('dptGen'))}</b>`,
+    `📥 DPT Received: <b>${num(sum('dptRecv'))}</b>`,
+    `✅ SQC Done: <b>${num(sum('sqc'))}</b>`,
+    `🚨 Evacuation: <b>${num(sum('evac'))}</b>`,
+    `🚚 Trucks In: <b>${trucks.filter(t => t.direction === 'IN').length}</b>`,
+    `🚛 Trucks Out: <b>${trucks.filter(t => t.direction === 'OUT').length}</b>`,
+    `📦 Empty Out: <b>${trucks.filter(t => t.direction === 'EMPTY').length}</b>`,
+    `👷 Manpower: <b>${num(mp)}</b>`,
+  ];
+  const bottomHtml = items.map(i => `<span class="tk">${i}</span>`).join('') ;
+  $('#tickerBottomTrack').innerHTML = bottomHtml + bottomHtml;
+  $('#tickerBottomTrack').style.animationDuration = Math.max(24, bottomHtml.length / 16) + 's';
+}
+
+/* ============================================================
+   7. RENDER ROUTER
+   ============================================================ */
+function render() {
+  if (!currentUser) return;
+  if (!allowedPages().some(p => p.id === state.page)) state.page = 'home';
+  const page = PAGES.find(p => p.id === state.page) || PAGES[0];
+  $('#pageTitle').textContent = page.label;
+  $('#pageSub').textContent = page.sub;
+
+  const v = $('#view');
+  v.innerHTML = '';
+  const map = { reports: renderReports, settings: renderSettings, manpower: renderManpower, stops: renderStops, search: renderSearch, home: renderHome, trucks: renderTrucks, hourly: renderHourly, shift: renderShift, weekly: renderWeekly, analytics: renderAnalytics, admin: renderAdmin };
+  (map[state.page] || renderHome)(v);
+  renderTickers();
+}
+
+/* re-render on any store change */
+COLLECTIONS.forEach(c => Store.on(c, () => { if (currentUser) { try { render(); } catch (e) { console.warn(e); } } }));
+
+/* ============================================================
+   8. SHARED UI BUILDERS
+   ============================================================ */
+const kpiCard = (label, value, unit = '', accent = 'cyan', sub = '') => `
+  <div class="kpi ${accent}">
+    <div class="kpi-l">${label}</div>
+    <div class="kpi-v">${value}<span class="kpi-u">${unit}</span></div>
+    ${sub ? `<div class="kpi-s">${sub}</div>` : ''}
+  </div>`;
+
+function barChart(items, cls = '') {
+  const max = Math.max(1, ...items.map(i => Math.abs(i.value)));
+  return `<div class="bars">${items.map(i => `
+    <div class="bar-item" title="${esc(i.label)}: ${num(i.value, i.dec || 0)}">
+      <div class="bar-wrap"><div class="bar ${cls}" style="height:${Math.max(3, (Math.abs(i.value) / max) * 100)}%"></div></div>
+      <span>${esc(i.label)}</span>
+    </div>`).join('')}</div>`;
+}
+
+function deltaBadge(cur, prev, unit = '%') {
+  const p = pctChange(cur, prev);
+  const cls = p > 0.5 ? 'up' : (p < -0.5 ? 'down' : '');
+  const arrow = p > 0.5 ? '▲' : (p < -0.5 ? '▼' : '■');
+  return `<span class="${cls}">${arrow} ${num(Math.abs(p), 1)}${unit}</span>`;
+}
+
+/* ---------- MODAL ---------- */
+function openModal(title, bodyHTML, onSave, saveLabel = 'Save') {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <div class="modal-head"><h3>${esc(title)}</h3><button class="x" data-close>✕</button></div>
+      <div class="modal-body">${bodyHTML}</div>
+      <div class="modal-foot">
+        <button class="btn ghost" data-close>Cancel</button>
+        <button class="btn primary" data-save>${esc(saveLabel)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
+  bg.addEventListener('click', e => { if (e.target === bg) close(); });
+  bg.querySelector('[data-save]').onclick = async () => {
+    const btn = bg.querySelector('[data-save]');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try { await onSave(); close(); }
+    catch (e) { toast(e.message || 'Save failed', 'err'); btn.disabled = false; btn.textContent = saveLabel; }
+  };
+  return bg;
+}
+
+function fieldHTML(f, val) {
+  const v = val === undefined || val === null ? (f.def ?? '') : val;
+  const cls = f.full ? 'field full' : 'field';
+  let inner = '';
+  if (f.t === 'select') {
+    inner = `<select id="f_${f.k}">${(f.opts || []).map(o => {
+      const ov = typeof o === 'object' ? o.v : o, ol = typeof o === 'object' ? o.l : o;
+      return `<option value="${esc(ov)}" ${String(ov) === String(v) ? 'selected' : ''}>${esc(ol)}</option>`;
+    }).join('')}</select>`;
+  } else if (f.t === 'textarea') {
+    inner = `<textarea id="f_${f.k}" rows="2" placeholder="${esc(f.ph || '')}">${esc(v)}</textarea>`;
+  } else {
+    inner = `<input id="f_${f.k}" type="${f.t || 'text'}" value="${esc(v)}" step="${f.step || 'any'}" placeholder="${esc(f.ph || '')}" ${f.min !== undefined ? `min="${f.min}"` : ''}/>`;
+  }
+  return `<div class="${cls}"><label>${esc(f.l)}${f.u ? ` <span style="opacity:.55">(${f.u})</span>` : ''}</label>${inner}</div>`;
+}
+
+function openForm({ title, fields, values = {}, onSave, saveLabel }) {
+  const body = `<div class="fgrid">${fields.map(f => fieldHTML(f, values[f.k])).join('')}</div>`;
+  openModal(title, body, async () => {
+    const data = {};
+    fields.forEach(f => {
+      const el = $('#f_' + f.k);
+      if (!el) return;
+      data[f.k] = f.t === 'number' ? Number(el.value || 0) : el.value;
+    });
+    if (values.id) data.id = values.id;
+    await onSave(data);
+  }, saveLabel);
+}
+
+/* metric field builders */
+const metricFields = () => METRICS.map(m => ({ k: m.k, l: m.l, u: m.u, t: 'number', step: m.step || '1', min: 0 }));
+
+/* ============================================================
+   9. HOME DASHBOARD
+   ============================================================ */
+function renderHome(v) {
+  const d = today();
+  const plant = Store.get('plant').find(p => p.date === d) || { date: d, startTime: '', closeTime: '', status: 'stopped' };
+  const manpower = Store.get('manpower').filter(m => m.date === d);
+  const mpA = manpower.filter(m => m.direction !== 'OUT' && m.shift === 'A').reduce((a, m) => a + Number(m.count || 0), 0);
+  const mpB = manpower.filter(m => m.direction !== 'OUT' && m.shift === 'B').reduce((a, m) => a + Number(m.count || 0), 0);
+  const hourly = Store.get('hourly').filter(h => h.date === d).sort((a, b) => String(a.hour).localeCompare(String(b.hour)));
+  const shifts = Store.get('shift').filter(s => s.date === d);
+  const sum = k => (shifts.length ? shifts : hourly).reduce((a, s) => a + Number(s[k] || 0), 0);
+
+  const trucks = Store.get('trucks').filter(t => t.date === d);
+  const contractors = {};
+  manpower.filter(m => m.direction !== 'OUT').forEach(m => { contractors[m.contractor || '—'] = (contractors[m.contractor || '—'] || 0) + Number(m.count || 0); });
+
+  const openStop = Store.get('stops').find(s => s.status === 'open');
+  const running = !openStop && plant.status === 'running';
+  const runtime = (() => {
+    if (!plant.startTime) return '—';
+    const [h, mi] = plant.startTime.split(':').map(Number);
+    const start = new Date(); start.setHours(h, mi, 0, 0);
+    const end = plant.closeTime ? (() => { const [h2, m2] = plant.closeTime.split(':').map(Number); const e = new Date(); e.setHours(h2, m2, 0, 0); return e; })() : new Date();
+    const mins = Math.max(0, Math.round((end - start) / 60000));
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  })();
+
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Plant Status', running ? 'RUNNING' : 'STOPPED', '', running ? 'lime' : 'rose',
+        `<span class="live-pill" style="padding:3px 9px;font-size:10px"><span class="dot"></span>${running ? 'LIVE' : 'OFFLINE'}</span>`)}
+      ${kpiCard('Plant Start Time', plant.startTime || '--:--', '', 'cyan', `Runtime: ${runtime}`)}
+      ${kpiCard('Plant Close Time', plant.closeTime || '--:--', '', 'violet', plant.closeTime ? 'Shift closed' : 'Shift open')}
+      ${kpiCard('Total Manpower', num(mpA + mpB), 'persons', 'amber', `Shift A: ${mpA} · Shift B: ${mpB}`)}
+    </div>
+
+    <div class="grid g4">
+      ${kpiCard('Cylinders Filled Today', num(sum('totalCyl')), 'cyl', 'blue', `From ${shifts.length ? 'shift' : 'hourly'} entries`)}
+      ${kpiCard('Production Today', num(sum('totalMT'), 2), 'MT', 'lime', 'Total metric tonnage')}
+      ${kpiCard('Avg Filling Accuracy', num(sum('accuracy') / ((shifts.length || hourly.length) || 1), 2), '%', 'cyan', 'Weight based accuracy')}
+      ${kpiCard('Filling Loss', num(sum('loss'), 2), 'kg', 'rose', 'Today cumulative')}
+    </div>
+
+    <div class="grid g2">
+      <div class="card hl">
+        <div class="card-h">
+          <h3>🏭 Plant Control</h3>
+          <div class="sub">${d}</div>
+        </div>
+        <div class="row" style="margin-bottom:14px">
+          ${canEdit('home') ? `
+            ${canTime() ? `<button class="btn primary sm" data-act="plant-times">🕒 Set Plant Times</button>` : ''}
+            <button class="btn ghost sm" data-act="goto" data-page="stops">⛔ Plant Stop / Resume</button>
+            
+          ` : `<span class="mini">Read-only access</span>`}
+        </div>
+        <div class="grid g2">
+          <div class="kpi cyan"><div class="kpi-l">Start</div><div class="kpi-v" style="font-size:22px">${plant.startTime || '--:--'}</div></div>
+          <div class="kpi violet"><div class="kpi-l">Close</div><div class="kpi-v" style="font-size:22px">${plant.closeTime || '--:--'}</div></div>
+        </div>
+        <div style="margin-top:16px">
+          ${homeShiftBlock(plant)}<div class="mini" style="margin-bottom:8px">Production progress vs 24h target</div>
+          <div class="progress"><div style="width:${Math.min(100, (Number(sum('totalMT')) / 60) * 100)}%"></div></div>
+        </div>
+      </div>
+
+      <div class="card hl">
+        <div class="card-h">
+          <h3>👷 Manpower — Shift &amp; Contractor wise</h3>
+          ${canEdit('home') ? `<button class="btn ghost sm" data-act="add-manpower">+ Add</button>` : ''}
+        </div>
+        <div class="grid g2" style="margin-bottom:12px">
+          <div class="kpi blue"><div class="kpi-l">Shift A</div><div class="kpi-v">${mpA}<span class="kpi-u">persons</span></div></div>
+          <div class="kpi violet"><div class="kpi-l">Shift B</div><div class="kpi-v">${mpB}<span class="kpi-u">persons</span></div></div>
+        </div>
+        <div class="table-wrap" style="max-height:170px">
+          <table>
+            <thead><tr><th>Contractor</th><th>Shift</th><th>Manpower</th><th></th></tr></thead>
+            <tbody>
+              ${manpower.length ? manpower.map(m => `
+                <tr>
+                  <td>${esc(m.contractor || '—')}</td>
+                  <td><span class="tag info">Shift ${esc(m.shift)}</span></td>
+                  <td><b>${num(m.count)}</b> <span class="tag ${m.direction === 'OUT' ? 'warn' : 'ok'}">${m.direction === 'OUT' ? 'OUT' : 'IN'}</span></td>
+                  <td>${canEdit('home') ? `<button class="btn danger sm" data-act="del" data-col="manpower" data-id="${m.id}">✕</button>` : ''}</td>
+                </tr>`).join('') : `<tr><td colspan="4" class="empty">No manpower entries today</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h3>⏱️ Hourly Production Trend</h3><span class="sub">Today</span></div>
+        ${hourly.length ? barChart(hourly.map(h => ({ label: h.hour + ':00', value: Number(h.totalCyl || 0) }))) : `<div class="empty">No hourly data yet</div>`}
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>🚚 Truck Activity Snapshot</h3><span class="sub">Today</span></div>
+        <div class="grid g3">
+          ${kpiCard('Truck In', num(trucks.filter(t => t.direction === 'IN').length), '', 'lime')}
+          ${kpiCard('Truck Out', num(trucks.filter(t => t.direction === 'OUT').length), '', 'cyan')}
+          ${kpiCard('Empty Out', num(trucks.filter(t => t.direction === 'EMPTY').length), '', 'amber')}
+        </div>
+        <div class="mini" style="margin-top:14px">Contractor split</div>
+        <div style="margin-top:8px">
+          ${Object.keys(contractors).length
+            ? Object.entries(contractors).map(([k, c]) => `
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <span style="min-width:110px;font-size:12px">${esc(k)}</span>
+                <div class="progress" style="flex:1"><div style="width:${(c / Math.max(1, mpA + mpB)) * 100}%"></div></div>
+                <b style="font-size:12px">${c}</b>
+              </div>`).join('')
+            : `<div class="mini">No contractor data</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   10. TRUCK DASHBOARD
+   ============================================================ */
+function renderTrucks(v) {
+  const d = today();
+  const all = Store.get('trucks').filter(t => t.date === d).sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+  const cIn = all.filter(t => t.direction === 'IN');
+  const cOut = all.filter(t => t.direction === 'OUT');
+  const cEmp = all.filter(t => t.direction === 'EMPTY');
+  const cylIn = cIn.reduce((a, t) => a + Number(t.qty || 0), 0);
+
+  const feedRows = all.length ? all : [];
+  const feed = feedRows.map(t => `
+    <div class="vrow">
+      <span class="hr">${esc(t.time || '--:--')}</span>
+      <span class="tag ${t.direction === 'IN' ? 'ok' : t.direction === 'OUT' ? 'info' : 'warn'}">${esc(t.direction)}</span>
+      <span>${esc(t.vehicle || '—')}</span>
+      <span class="val">${num(t.qty)} cyl</span>
+    </div>`).join('');
+
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Trucks In', num(cIn.length), 'trips', 'lime', `Cylinders: ${num(cylIn)}`)}
+      ${kpiCard('Trucks Out', num(cOut.length), 'trips', 'cyan', 'Dispatched today')}
+      ${kpiCard('Empty Out', num(cEmp.length), 'trips', 'amber', 'Empty cylinder movement')}
+      ${kpiCard('Inside Plant Now', num(inPlantVehicles().length), 'trucks', 'violet', `Total movements: ${num(all.length)}`)}
+    </div>
+
+    <div class="grid g2">
+      <div class="card hl">
+        <div class="card-h">
+          <h3>📡 Live Truck Feed</h3>
+          <div class="row">
+            <span class="sub">Auto-scrolling</span>
+            ${canEdit('trucks') ? `<button class="btn primary sm" data-act="add-truck">+ Log Movement</button>` : ''}
+          </div>
+        </div>
+        <div class="vscroll">
+          <div class="vscroll-inner">${feed ? feed + feed : `<div class="empty">No truck movements logged today</div>`}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>📊 Movement Split</h3></div>
+        ${barChart([
+          { label: 'Truck In', value: cIn.length },
+          { label: 'Truck Out', value: cOut.length },
+          { label: 'Empty Out', value: cEmp.length },
+        ], 'v')}
+        <div class="grid g2" style="margin-top:16px">
+          ${kpiCard('Cyl In', num(cylIn), 'cyl', 'lime')}
+          ${kpiCard('Cyl Out', num(cOut.reduce((a, t) => a + Number(t.qty || 0), 0)), 'cyl', 'cyan')}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🗂️ Truck Movement Register — ${d}</h3>
+        <button class="btn ghost sm" data-act="export" data-col="trucks">⬇ Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Direction</th><th>Vehicle No.</th><th>Invoice / DC</th><th>Qty</th><th>Remarks</th><th>By</th><th></th></tr></thead>
+          <tbody>
+            ${all.length ? all.map(t => `
+              <tr>
+                <td>${esc(t.time || '—')}</td>
+                <td><span class="tag ${t.direction === 'IN' ? 'ok' : t.direction === 'OUT' ? 'info' : 'warn'}">${esc(t.direction)}</span></td>
+                <td>${esc(t.vehicle || '—')}</td>
+                <td>${esc(t.invoice || '—')}</td>
+                <td><b>${num(t.qty)}</b></td>
+                <td>${esc(t.remarks || '—')}</td>
+                <td class="mini">${esc(t._by || '—')}</td>
+                <td>${canEdit('trucks') ? `<button class="btn danger sm" data-act="del" data-col="trucks" data-id="${t.id}">✕</button>` : ''}</td>
+              </tr>`).join('') : `<tr><td colspan="8" class="empty">No records</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   11. HOURLY FILLING
+   ============================================================ */
+function renderHourly(v) {
+  const d = today();
+  const rows = Store.get('hourly').filter(h => h.date === d).sort((a, b) => String(a.hour).localeCompare(String(b.hour)));
+  const s = k => rows.reduce((a, r) => a + Number(r[k] || 0), 0);
+  const avgAcc = rows.length ? s('accuracy') / rows.length : 0;
+
+  const feed = rows.map(r => `
+    <div class="vrow">
+      <span class="hr">${esc(r.hour)}:00</span>
+      <span>${num(r.totalCyl)} cyl</span>
+      <span class="tag info">${num(r.totalMT, 2)} MT</span>
+      <span class="val">${num(r.accuracy, 2)}%</span>
+    </div>`).join('');
+
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Cylinders Today', num(s('totalCyl')), 'cyl', 'cyan', `${rows.length} hourly entries`)}
+      ${kpiCard('Production Today', num(s('totalMT'), 2), 'MT', 'lime')}
+      ${kpiCard('Avg Accuracy', num(avgAcc, 2), '%', 'violet')}
+      ${kpiCard('Filling Loss', num(s('loss'), 2), 'kg', 'rose')}
+    </div>
+
+    <div class="grid g2">
+      <div class="card hl">
+        <div class="card-h">
+          <h3>⏱️ Hourly Filling Stream</h3>
+          ${canEdit('hourly') ? `<button class="btn primary sm" data-act="add-hourly">+ Add Hour</button>` : ''}
+        </div>
+        <div class="vscroll">
+          <div class="vscroll-inner">
+            ${feed ? feed + feed : `<div class="empty">No hourly entries for today</div>`}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h3>📈 Hourly Cylinder Output</h3><span class="sub">Auto-refresh</span></div>
+        ${rows.length ? barChart(rows.map(r => ({ label: r.hour + ':00', value: Number(r.totalCyl || 0) }))) : `<div class="empty">No data</div>`}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>📋 Hourly Filling Register — ${d}</h3>
+        <button class="btn ghost sm" data-act="export" data-col="hourly">⬇ Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Hour</th><th>Total</th><th>14.2</th><th>19</th><th>35</th><th>47</th><th>5</th><th>422</th>
+            <th>MT</th><th>Acc %</th><th>DPT Gen</th><th>DPT Rec</th><th>HR</th><th>Evac</th><th>SQC</th><th>Loss</th><th></th></tr>
+          </thead>
+          <tbody>
+            ${rows.length ? rows.map(r => `
+              <tr>
+                <td><b>${esc(r.hour)}:00</b></td>
+                <td><b style="color:#7dd3fc">${num(r.totalCyl)}</b></td>
+                <td>${num(r.c142)}</td><td>${num(r.c19)}</td><td>${num(r.c35)}</td>
+                <td>${num(r.c47)}</td><td>${num(r.c5)}</td><td>${num(r.c422)}</td>
+                <td>${num(r.totalMT, 2)}</td><td>${num(r.accuracy, 2)}</td>
+                <td>${num(r.dptGen)}</td><td>${num(r.dptRecv)}</td><td>${num(r.hrGen)}</td>
+                <td>${num(r.evac)}</td><td>${num(r.sqc)}</td><td>${num(r.loss, 2)}</td>
+                <td>${canEdit('hourly') ? `<button class="btn danger sm" data-act="del" data-col="hourly" data-id="${r.id}">✕</button>` : ''}</td>
+              </tr>`).join('') : `<tr><td colspan="17" class="empty">No records for today</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   12. SHIFT FILLING
+   ============================================================ */
+function renderShift(v) {
+  const d = today();
+  const A = Store.get('shift').find(s => s.date === d && s.shift === 'A') || {};
+  const B = Store.get('shift').find(s => s.date === d && s.shift === 'B') || {};
+
+  const shiftCard = (S, label, accent) => `
+    <div class="card hl">
+      <div class="card-h">
+        <h3>${label}</h3>
+        <div class="row">
+          <span class="tag ${S.id ? 'ok' : 'mute'}">${S.id ? 'Submitted' : 'Not filled'}</span>
+          ${canEdit('shift') ? `<button class="btn ghost sm" data-act="edit-shift" data-shift="${label.includes('A') ? 'A' : 'B'}">${S.id ? '✎ Edit' : '+ Fill'}</button>` : ''}
+        </div>
+      </div>
+      <div class="grid g3">
+        ${METRICS.map(m => `
+          <div class="kpi ${accent}" style="padding:11px 12px">
+            <div class="kpi-l" style="font-size:9.5px">${esc(m.l)}</div>
+            <div class="kpi-v" style="font-size:17px">${num(S[m.k], m.step ? 2 : 0)}<span class="kpi-u" style="font-size:10px">${m.u}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  const diff = (k, dec = 0) => {
+    const a = Number(A[k] || 0), b = Number(B[k] || 0);
+    const p = pctChange(b, a);
+    return `<span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${num(Math.abs(p), 1)}%</span>`;
+  };
+
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Shift A Total', num(A.totalCyl), 'cyl', 'cyan', `${num(A.totalMT, 2)} MT`)}
+      ${kpiCard('Shift B Total', num(B.totalCyl), 'cyl', 'violet', `${num(B.totalMT, 2)} MT`)}
+      ${kpiCard('Day Total', num(Number(A.totalCyl || 0) + Number(B.totalCyl || 0)), 'cyl', 'lime',
+        `${num(Number(A.totalMT || 0) + Number(B.totalMT || 0), 2)} MT`)}
+      ${kpiCard('Avg Accuracy', num(((Number(A.accuracy || 0) + Number(B.accuracy || 0)) / ((A.id ? 1 : 0) + (B.id ? 1 : 0) || 1)), 2), '%', 'amber')}
+    </div>
+
+    ${shiftCard(A, '🧾 Shift A', 'cyan')}
+    ${shiftCard(B, '🧾 Shift B', 'violet')}
+
+    <div class="card">
+      <div class="card-h"><h3>⚖️ Shift Comparison (B vs A)</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Shift A</th><th>Shift B</th><th>Change</th></tr></thead>
+          <tbody>
+            ${METRICS.map(m => `
+              <tr>
+                <td>${esc(m.l)} <span class="mini">(${m.u})</span></td>
+                <td><b>${num(A[m.k], m.step ? 2 : 0)}</b></td>
+                <td><b>${num(B[m.k], m.step ? 2 : 0)}</b></td>
+                <td>${diff(m.k)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   13. WEEKLY CONSUMABLES
+   ============================================================ */
+function renderWeekly(v) {
+  const wk = state.week || weekStart();
+  const prevWk = addDays(wk, -7);
+  const cur = Store.get('weekly').find(w => w.weekStart === wk) || {};
+  const prev = Store.get('weekly').find(w => w.weekStart === prevWk) || {};
+
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h">
+        <h3>📦 Weekly Consumables</h3>
+        <div class="row">
+          <input type="date" id="weekPicker" value="${wk}" style="padding:9px 12px;border-radius:11px;border:1px solid var(--stroke);background:rgba(255,255,255,.05);color:var(--txt)"/>
+          ${canEdit('weekly') ? `<button class="btn primary sm" data-act="edit-weekly">${cur.id ? '✎ Edit Week' : '+ Fill Week'}</button>` : ''}
+          <button class="btn ghost sm" data-act="export" data-col="weekly">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="mini">Week starting <b>${wk}</b> · compared with previous week <b>${prevWk}</b></div>
+    </div>
+
+    <div class="grid g3">
+      ${CONSUMABLES.map(c => {
+        const a = Number(cur[c.k] || 0), b = Number(prev[c.k] || 0);
+        const p = pctChange(a, b);
+        return `<div class="kpi ${p > 0 ? 'rose' : p < 0 ? 'lime' : 'cyan'}">
+          <div class="kpi-l">${esc(c.l)}</div>
+          <div class="kpi-v">${num(a)}<span class="kpi-u">${c.u}</span></div>
+          <div class="kpi-s">Prev: ${num(b)} · <span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲' : p < 0 ? '▼' : '■'} ${num(Math.abs(p), 1)}%</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>📊 Consumable Usage Chart</h3><span class="sub">This week</span></div>
+      ${barChart(CONSUMABLES.map(c => ({ label: c.l.split(' ')[0], value: Number(cur[c.k] || 0) })), 'l')}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🗂️ Consumption Table</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Consumable</th><th>Unit</th><th>This Week</th><th>Prev Week</th><th>Variance</th></tr></thead>
+          <tbody>
+            ${CONSUMABLES.map(c => {
+              const a = Number(cur[c.k] || 0), b = Number(prev[c.k] || 0);
+              const p = pctChange(a, b);
+              return `<tr>
+                <td>${esc(c.l)}</td><td class="mini">${c.u}</td>
+                <td><b>${num(a)}</b></td><td>${num(b)}</td>
+                <td><span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲' : p < 0 ? '▼' : '■'} ${num(Math.abs(p), 1)}%</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const picker = $('#weekPicker');
+  if (picker) picker.addEventListener('change', e => { state.week = e.target.value; render(); });
+}
+
+/* ============================================================
+   14. ANALYTICS
+   ============================================================ */
+function rangeFor(period) {
+  const now = new Date();
+  if (period === 'weekly') {
+    const curTo = today(), curFrom = addDays(curTo, -6);
+    const prevTo = addDays(curFrom, -1), prevFrom = addDays(prevTo, -6);
+    return { curFrom, curTo, prevFrom, prevTo, label: 'Last 7 days' };
+  }
+  if (period === 'monthly') {
+    const curFrom = monthStart(now), curTo = today();
+    const prevFrom = monthStart(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const prevTo = isoDate(new Date(now.getFullYear(), now.getMonth(), 0));
+    return { curFrom, curTo, prevFrom, prevTo, label: 'This month' };
+  }
+  // daily (today vs yesterday)
+  const curTo = today(), curFrom = today();
+  const prevTo = addDays(curFrom, -1), prevFrom = prevTo;
+  return { curFrom, curTo, prevFrom, prevTo, label: 'Today' };
+}
+
+function aggFilling(from, to, key) {
+  const sh = Store.get('shift').filter(r => r.date >= from && r.date <= to);
+  const hr = Store.get('hourly').filter(r => r.date >= from && r.date <= to);
+  const src = sh.length ? sh : hr;
+  return src.reduce((a, r) => a + Number(r[key] || 0), 0);
+}
+function aggTrucks(from, to, dir) {
+  return Store.get('trucks').filter(t => t.date >= from && t.date <= to && t.direction === dir).length;
+}
+function aggConsum(from, to, key) {
+  return Store.get('weekly').filter(w => w.weekStart >= from && w.weekStart <= to)
+    .reduce((a, w) => a + Number(w[key] || 0), 0);
+}
+
+function renderAnalytics(v) {
+  const period = state.analytics.period;
+  const R = rangeFor(period);
+  const group = state.analytics.group;
+
+  let rows = [];
+  if (group === 'filling') {
+    rows = METRICS.map(m => ({
+      label: m.l, unit: m.u,
+      cur: aggFilling(R.curFrom, R.curTo, m.k),
+      prev: aggFilling(R.prevFrom, R.prevTo, m.k),
+    }));
+  } else if (group === 'trucks') {
+    rows = ['IN', 'OUT', 'EMPTY'].map(d => ({
+      label: 'Trucks ' + d, unit: 'trips',
+      cur: aggTrucks(R.curFrom, R.curTo, d),
+      prev: aggTrucks(R.prevFrom, R.prevTo, d),
+    }));
+  } else {
+    rows = CONSUMABLES.map(c => ({
+      label: c.l, unit: c.u,
+      cur: aggConsum(R.curFrom, R.curTo, c.k),
+      prev: aggConsum(R.prevFrom, R.prevTo, c.k),
+    }));
+  }
+
+  const totalCur = rows.reduce((a, r) => a + r.cur, 0);
+  const totalPrev = rows.reduce((a, r) => a + r.prev, 0);
+
+  // daily series for production chart
+  const series = [];
+  const start = new Date(R.curFrom);
+  for (let i = 0; i < 10; i++) {
+    const dd = addDays(R.curFrom, i);
+    if (dd > R.curTo) break;
+    const sh = Store.get('shift').filter(s => s.date === dd);
+    const hr = Store.get('hourly').filter(s => s.date === dd);
+    const src = sh.length ? sh : hr;
+    series.push({ label: dd.slice(5), value: src.reduce((a, s) => a + Number(s.totalMT || 0), 0), dec: 2 });
+  }
+
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h">
+        <h3>📊 Analytics &amp; Comparison</h3>
+        <div class="pillbar">
+          <button data-act="period" data-v="daily" class="${period === 'daily' ? 'active' : ''}">Daily</button>
+          <button data-act="period" data-v="weekly" class="${period === 'weekly' ? 'active' : ''}">Weekly</button>
+          <button data-act="period" data-v="monthly" class="${period === 'monthly' ? 'active' : ''}">Monthly</button>
+        </div>
+      </div>
+      <div class="pillbar" style="margin-bottom:12px">
+        <button data-act="group" data-v="filling" class="${group === 'filling' ? 'active' : ''}">Filling Metrics</button>
+        <button data-act="group" data-v="trucks" class="${group === 'trucks' ? 'active' : ''}">Truck Metrics</button>
+        <button data-act="group" data-v="consum" class="${group === 'consum' ? 'active' : ''}">Consumables</button>
+      </div>
+      <div class="mini">
+        Current: <b>${R.curFrom}</b> → <b>${R.curTo}</b> &nbsp;|&nbsp;
+        Previous: <b>${R.prevFrom}</b> → <b>${R.prevTo}</b>
+      </div>
+    </div>
+
+    <div class="grid g3">
+      ${kpiCard('Current Period Total', num(totalCur), '', 'cyan', R.label)}
+      ${kpiCard('Previous Period Total', num(totalPrev), '', 'violet', 'Baseline')}
+      ${kpiCard('Overall Change', num(pctChange(totalCur, totalPrev), 1), '%', pctChange(totalCur, totalPrev) >= 0 ? 'lime' : 'rose', 'Percentage delta')}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>📈 Daily Production (MT)</h3></div>
+      ${series.length ? barChart(series, 'a') : `<div class="empty">No data in this period</div>`}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🔍 Metric-wise Percentage Analysis</h3>
+        <button class="btn ghost sm" data-act="export-analytics">⬇ Export</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Metric</th><th>Current</th><th>Previous</th><th>Δ Absolute</th><th>Δ %</th><th style="width:180px">Trend</th></tr></thead>
+          <tbody>
+            ${rows.map(r => {
+              const p = pctChange(r.cur, r.prev);
+              const w = Math.min(100, Math.abs(p));
+              return `<tr>
+                <td>${esc(r.label)} <span class="mini">(${esc(r.unit)})</span></td>
+                <td><b>${num(r.cur, 2)}</b></td>
+                <td>${num(r.prev, 2)}</td>
+                <td>${num(r.cur - r.prev, 2)}</td>
+                <td><span class="${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲' : p < 0 ? '▼' : '■'} ${num(Math.abs(p), 1)}%</span></td>
+                <td><div class="progress"><div style="width:${w}%;background:${p >= 0 ? 'linear-gradient(90deg,#34d399,#a3e635)' : 'linear-gradient(90deg,#fb7185,#f472b6)'}"></div></div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   15. ADMIN PANEL
+   ============================================================ */
+function renderAdmin(v) {
+  const tab = state.adminTab;
+  const tabs = [
+    { id: 'users', l: '👥 Users & Permissions' },
+    { id: 'data', l: '🗄️ Data Explorer' },
+    { id: 'corr', l: '🔁 Corrections' },
+    { id: 'audit', l: '📜 Audit Log' },
+  ];
+
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h"><h3>⚙️ Admin Control Center</h3>
+        <div class="pillbar">
+          ${tabs.map(t => `<button data-act="admintab" data-v="${t.id}" class="${tab === t.id ? 'active' : ''}">${t.l}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div id="adminBody"></div>
+  `;
+
+  const body = $('#adminBody');
+  if (tab === 'users') renderAdminUsers(body);
+  if (tab === 'data') renderAdminData(body);
+  if (tab === 'corr') renderAdminCorr(body);
+  if (tab === 'audit') renderAdminAudit(body);
+}
+
+function renderAdminUsers(body) {
+  const users = Store.get('users');
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-h"><h3>👥 Create / Manage Users</h3>
+        <button class="btn primary sm" data-act="new-user">+ Create User</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Dashboard Access</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${users.map(u => `
+              <tr>
+                <td><b>${esc(u.name || u.username)}</b><div class="mini">@${esc(u.username)}</div></td>
+                <td><span class="tag ${u.role === 'admin' ? 'warn' : 'info'}">${esc(u.role)}</span></td>
+                <td><span class="tag ${u.active ? 'ok' : 'bad'}">${u.active ? 'Active' : 'Pending'}</span></td>
+                <td class="mini">${(u.perms || []).map(p => PAGES.find(x => x.id === p)?.icon + ' ' + (PAGES.find(x => x.id === p)?.label || p)).join('<br/>') || '—'}</td>
+                <td>
+                  <div class="row">
+                    <button class="btn ghost sm" data-act="perm-user" data-id="${u.id}">🔐 Access</button>
+                    <button class="btn ghost sm" data-act="toggle-user" data-id="${u.id}">${u.active ? '⏸ Disable' : '▶ Approve'}</button>
+                    <button class="btn ghost sm" data-act="reset-pass" data-id="${u.id}">🔑 Reset</button>
+                    ${u.username !== 'admin' && u.id !== currentUser.id
+                      ? `<button class="btn danger sm" data-act="del-user" data-id="${u.id}">✕</button>` : ''}
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderAdminData(body) {
+  const col = state.adminCol || 'hourly';
+  const cols = ['plant', 'manpower', 'trucks', 'hourly', 'shift', 'weekly'];
+  const rows = Store.get(col).slice().reverse().slice(0, 120);
+
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-h">
+        <h3>🗄️ Data Explorer — <span style="color:var(--cyan)">${col}</span></h3>
+        <div class="row">
+          <select id="colPick" style="padding:9px 12px;border-radius:11px;border:1px solid var(--stroke);background:#0d1527;color:var(--txt)">
+            ${cols.map(c => `<option ${c === col ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+          <button class="btn ghost sm" data-act="export" data-col="${col}">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="mini" style="margin-bottom:10px">Admin can modify or delete any entry. Deleting a record removes it from all dashboards instantly.</div>
+      <div class="table-wrap" style="max-height:520px">
+        <table>
+          <thead><tr><th>Date/Info</th><th>Summary</th><th>Entered By</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${rows.length ? rows.map(r => `
+              <tr>
+                <td>${esc(r.date || r.weekStart || '—')} ${r.hour ? '· ' + esc(r.hour) + ':00' : ''} ${r.shift ? '· Shift ' + esc(r.shift) : ''}</td>
+                <td class="mini">${esc(summaryOf(col, r))}</td>
+                <td class="mini">${esc(r._by || '—')}</td>
+                <td>
+                  <div class="row">
+                    <button class="btn ghost sm" data-act="admin-edit" data-col="${col}" data-id="${r.id}">✎ Edit</button>
+                    <button class="btn ghost sm" data-act="resend" data-col="${col}" data-id="${r.id}">🔁 Resend</button>
+                    <button class="btn danger sm" data-act="del" data-col="${col}" data-id="${r.id}">✕</button>
+                  </div>
+                </td>
+              </tr>`).join('') : `<tr><td colspan="4" class="empty">No records</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  const pick = $('#colPick');
+  if (pick) pick.onchange = e => { state.adminCol = e.target.value; render(); };
+}
+
+function summaryOf(col, r) {
+  if (col === 'hourly' || col === 'shift') return `${num(r.totalCyl)} cyl · ${num(r.totalMT, 2)} MT · Acc ${num(r.accuracy, 2)}%`;
+  if (col === 'trucks') return `${r.direction} · ${r.vehicle || '—'} · ${num(r.qty)} cyl`;
+  if (col === 'manpower') return `${r.contractor || '—'} · Shift ${r.shift} · ${num(r.count)} persons`;
+  if (col === 'plant') return `Start ${r.startTime || '--:--'} · Close ${r.closeTime || '--:--'} · ${r.status}`;
+  if (col === 'weekly') return CONSUMABLES.map(c => `${c.l}: ${num(r[c.k])}`).slice(0, 3).join(' · ') + '…';
+  return '';
+}
+
+function renderAdminCorr(body) {
+  const tasks = Store.get('tasks').slice().reverse();
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-h"><h3>🔁 Data Correction Requests</h3><span class="sub">${tasks.filter(t => t.status === 'open').length} open</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Dashboard</th><th>Note</th><th>Status</th><th>Created</th><th></th></tr></thead>
+          <tbody>
+            ${tasks.length ? tasks.map(t => `
+              <tr>
+                <td><b>${esc(t.username)}</b></td>
+                <td><span class="tag info">${esc(t.page)}</span></td>
+                <td class="mini">${esc(t.note)}</td>
+                <td><span class="tag ${t.status === 'open' ? 'warn' : 'ok'}">${esc(t.status)}</span></td>
+                <td class="mini">${new Date(t.createdAt).toLocaleString()}</td>
+                <td><button class="btn danger sm" data-act="del-task" data-id="${t.id}">✕</button></td>
+              </tr>`).join('') : `<tr><td colspan="6" class="empty">No correction requests</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderAdminAudit(body) {
+  const logs = Store.get('audit');
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-h"><h3>📜 Audit Log</h3><span class="sub">${logs.length} events</span></div>
+      <div class="table-wrap" style="max-height:560px">
+        <table>
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+          <tbody>
+            ${logs.length ? logs.map(l => `
+              <tr>
+                <td class="mini">${new Date(l.at).toLocaleString()}</td>
+                <td><b>${esc(l.by)}</b></td>
+                <td><span class="tag mute">${esc(l.action)}</span></td>
+                <td class="mini">${esc(l.detail)}</td>
+              </tr>`).join('') : `<tr><td colspan="4" class="empty">No activity</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   16. GLOBAL ACTION HANDLER
+   ============================================================ */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+
+  /* ---------- plant ---------- */
+  if (act === 'plant-times') { openPlantTimes(); return; }
+  if (act === 'plant-start' || act === 'plant-close') {
+    const d = today();
+    const rec = Store.get('plant').find(p => p.date === d) || { id: d, date: d, status: 'stopped' };
+    openForm({
+      title: act === 'plant-start' ? 'Set Plant Start Time' : 'Set Plant Close Time',
+      fields: [{ k: act === 'plant-start' ? 'startTime' : 'closeTime', l: act === 'plant-start' ? 'Start Time' : 'Close Time', t: 'time', full: true }],
+      values: rec,
+      onSave: async data => {
+        await Store.upsert('plant', { ...rec, ...data, date: d, id: d, status: act === 'plant-start' ? 'running' : 'stopped' });
+        await audit(act === 'plant-start' ? 'PLANT_START' : 'PLANT_CLOSE', `${data[act === 'plant-start' ? 'startTime' : 'closeTime']}`);
+        toast('Plant timings updated');
+      }
+    });
+  }
+
+  if (act === 'plant-toggle') {
+    const d = today();
+    const rec = Store.get('plant').find(p => p.date === d) || { id: d, date: d, startTime: '', closeTime: '', status: 'stopped' };
+    const next = rec.status === 'running' ? 'stopped' : 'running';
+    await Store.upsert('plant', { ...rec, status: next, date: d, id: d, startTime: rec.startTime || (next === 'running' ? nowHM() : '') });
+    await audit('PLANT_STATUS', next);
+    toast(`Plant ${next}`);
+  }
+
+  /* ---------- manpower ---------- */
+  if (act === 'add-manpower') { openManpowerForm(); return; }
+  if (act === '_legacy-add-manpower') {
+    openForm({
+      title: 'Add Manpower Entry',
+      fields: [
+        { k: 'date', l: 'Date', t: 'date', def: today() },
+        { k: 'shift', l: 'Shift', t: 'select', opts: [{ v: 'A', l: 'Shift A' }, { v: 'B', l: 'Shift B' }] },
+        { k: 'contractor', l: 'Contractor', t: 'text', ph: 'Contractor name' },
+        { k: 'count', l: 'Manpower Count', t: 'number', min: 0 },
+      ],
+      onSave: async data => { await Store.upsert('manpower', data); await audit('MANPOWER_ADD', `${data.contractor} ${data.count}`); toast('Manpower added'); }
+    });
+  }
+
+  /* ---------- trucks ---------- */
+  if (act === 'add-truck') { openTruckForm(); return; }
+  if (act === '_legacy-add-truck') {
+    openForm({
+      title: 'Log Truck Movement',
+      fields: [
+        { k: 'date', l: 'Date', t: 'date', def: today() },
+        { k: 'time', l: 'Time', t: 'time', def: nowHM() },
+        { k: 'direction', l: 'Direction', t: 'select', opts: [{ v: 'IN', l: 'Truck In' }, { v: 'OUT', l: 'Truck Out' }, { v: 'EMPTY', l: 'Empty Out' }] },
+        { k: 'vehicle', l: 'Vehicle Number', t: 'text', ph: 'e.g. MH-12-AB-1234' },
+        { k: 'invoice', l: 'Invoice / DC No.', t: 'text' },
+        { k: 'qty', l: 'Cylinder Qty', t: 'number', min: 0 },
+        { k: 'remarks', l: 'Remarks', t: 'text', full: true },
+      ],
+      onSave: async data => { await Store.upsert('trucks', data); await audit('TRUCK_LOG', `${data.direction} ${data.vehicle}`); toast('Truck movement logged'); }
+    });
+  }
+
+  /* ---------- hourly ---------- */
+  if (act === 'add-hourly') { openHourlyForm(); return; }
+  if (act === '_legacy-add-hourly') {
+    openForm({
+      title: 'Add Hourly Filling Entry',
+      fields: [
+        { k: 'date', l: 'Date', t: 'date', def: today() },
+        { k: 'hour', l: 'Hour (24h)', t: 'select', opts: Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')) },
+        ...metricFields(),
+      ],
+      onSave: async data => {
+        const d = today();
+        if (Store.get('hourly').some(r => r.date === d && r.hour === data.hour)) {
+          throw new Error('This hour is already entered. Edit the existing record instead.');
+        }
+        await Store.upsert('hourly', data);
+        await audit('HOURLY_ADD', `${data.hour}:00 → ${data.totalCyl} cyl`);
+        toast('Hourly entry saved');
+      }
+    });
+  }
+
+  /* ---------- shift ---------- */
+  if (act === 'edit-shift') {
+    const shift = el.dataset.shift;
+    const d = today();
+    const rec = Store.get('shift').find(s => s.date === d && s.shift === shift) || {};
+    openForm({
+      title: `Shift ${shift} — Filling Data`,
+      fields: [
+        { k: 'date', l: 'Date', t: 'date', def: d },
+        { k: 'shift', l: 'Shift', t: 'select', opts: ['A', 'B'] },
+        ...metricFields(),
+      ],
+      values: { ...rec, date: rec.date || d, shift: rec.shift || shift },
+      onSave: async data => {
+        const existing = Store.get('shift').find(s => s.date === data.date && s.shift === data.shift && s.id !== rec.id);
+        if (existing) throw new Error(`Shift ${data.shift} already exists for ${data.date}. Edit that record instead.`);
+        await Store.upsert('shift', { ...rec, ...data });
+        await audit('SHIFT_SAVE', `${data.date} Shift ${data.shift}`);
+        toast('Shift data saved');
+      }
+    });
+  }
+
+  /* ---------- weekly ---------- */
+  if (act === 'edit-weekly') {
+    const wk = state.week || weekStart();
+    const rec = Store.get('weekly').find(w => w.weekStart === wk) || {};
+    openForm({
+      title: `Weekly Consumables — Week ${wk}`,
+      fields: [
+        { k: 'weekStart', l: 'Week Start (Monday)', t: 'date', def: wk, full: true },
+        ...CONSUMABLES.map(c => ({ k: c.k, l: c.l, u: c.u, t: 'number', min: 0 })),
+      ],
+      values: { ...rec, weekStart: rec.weekStart || wk },
+      onSave: async data => {
+        await Store.upsert('weekly', { ...rec, ...data });
+        await audit('WEEKLY_SAVE', `Week ${data.weekStart}`);
+        toast('Weekly consumables saved');
+      }
+    });
+  }
+
+  /* ---------- delete record ---------- */
+  if (act === 'del') {
+    const { col, id } = el.dataset;
+    if (!confirm('Delete this record permanently?')) return;
+    await Store.remove(col, id);
+    await audit('DELETE', `${col}/${id}`);
+    toast('Record deleted', 'ok');
+  }
+
+  /* ---------- analytics filters ---------- */
+  if (act === 'period') { state.analytics.period = el.dataset.v; render(); }
+  if (act === 'group') { state.analytics.group = el.dataset.v; render(); }
+
+  /* ---------- admin tabs ---------- */
+  if (act === 'admintab') { state.adminTab = el.dataset.v; render(); }
+
+  /* ---------- admin user actions ---------- */
+  if (act === 'new-user') openNewUserForm();
+
+  if (act === 'perm-user') {
+    const u = Store.get('users').find(x => x.id === el.dataset.id);
+    if (!u) return;
+    const body = `<div class="fgrid">${PAGES.filter(p => !p.adminOnly).map(p => `
+      <label style="display:flex;gap:9px;align-items:center;padding:11px 13px;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid var(--stroke);cursor:pointer">
+        <input type="checkbox" data-perm="${p.id}" ${(u.perms || []).includes(p.id) ? 'checked' : ''} style="width:16px;height:16px;accent-color:#22d3ee"/>
+        <span style="font-size:12.5px">${p.icon} ${p.label}</span>
+      </label>`).join('')}</div>`;
+    openModal(`Dashboard Access — ${u.name || u.username}`, body, async () => {
+      const perms = $$('[data-perm]').filter(c => c.checked).map(c => c.dataset.perm);
+      await Store.upsert('users', { ...u, perms });
+      await audit('PERMS_UPDATE', `${u.username}: ${perms.join(',')}`);
+      toast('Permissions updated');
+    });
+  }
+
+  if (act === 'toggle-user') {
+    const u = Store.get('users').find(x => x.id === el.dataset.id);
+    if (!u) return;
+    await Store.upsert('users', { ...u, active: !u.active });
+    await audit('USER_STATUS', `${u.username} → ${!u.active ? 'active' : 'disabled'}`);
+    toast(`User ${!u.active ? 'activated' : 'disabled'}`);
+  }
+
+  if (act === 'reset-pass') {
+    const u = Store.get('users').find(x => x.id === el.dataset.id);
+    if (!u) return;
+    const np = prompt(`New password for @${u.username} (min 6 chars):`);
+    if (!np || np.length < 6) { toast('Password too short', 'err'); return; }
+    const pass = await hashPw(u.username, np);
+    await Store.upsert('users', { ...u, pass });
+    await audit('PASSWORD_RESET', u.username);
+    toast('Password reset (local mode)');
+  }
+
+  if (act === 'del-user') {
+    if (!confirm('Delete this user?')) return;
+    await Store.remove('users', el.dataset.id);
+    await audit('USER_DELETE', el.dataset.id);
+    toast('User deleted');
+  }
+
+  /* ---------- admin data edit / resend ---------- */
+  if (act === 'admin-edit') {
+    const { col, id } = el.dataset;
+    const rec = Store.get(col).find(r => r.id === id);
+    if (!rec) return;
+    let fields = [];
+    if (col === 'hourly' || col === 'shift') {
+      fields = [
+        { k: 'date', l: 'Date', t: 'date' },
+        ...(col === 'shift' ? [{ k: 'shift', l: 'Shift', t: 'select', opts: ['A', 'B'] }] : [{ k: 'hour', l: 'Hour', t: 'text' }]),
+        ...metricFields(),
+      ];
+    } else if (col === 'trucks') {
+      fields = [
+        { k: 'date', l: 'Date', t: 'date' }, { k: 'time', l: 'Time', t: 'time' },
+        { k: 'direction', l: 'Direction', t: 'select', opts: ['IN', 'OUT', 'EMPTY'] },
+        { k: 'vehicle', l: 'Vehicle', t: 'text' }, { k: 'invoice', l: 'Invoice', t: 'text' },
+        { k: 'qty', l: 'Qty', t: 'number' }, { k: 'remarks', l: 'Remarks', t: 'text' },
+      ];
+    } else if (col === 'manpower') {
+      fields = [
+        { k: 'date', l: 'Date', t: 'date' },
+        { k: 'shift', l: 'Shift', t: 'select', opts: ['A', 'B'] },
+        { k: 'contractor', l: 'Contractor', t: 'text' }, { k: 'count', l: 'Count', t: 'number' },
+      ];
+    } else if (col === 'plant') {
+      fields = [{ k: 'startTime', l: 'Start Time', t: 'time' }, { k: 'closeTime', l: 'Close Time', t: 'time' },
+                { k: 'status', l: 'Status', t: 'select', opts: ['running', 'stopped'] }];
+    } else if (col === 'weekly') {
+      fields = [{ k: 'weekStart', l: 'Week Start', t: 'date' }, ...CONSUMABLES.map(c => ({ k: c.k, l: c.l, u: c.u, t: 'number' }))];
+    }
+    openForm({
+      title: `Edit Record — ${col}`, fields, values: rec,
+      onSave: async data => { await Store.upsert(col, { ...rec, ...data }); await audit('ADMIN_EDIT', `${col}/${id}`); toast('Record updated'); }
+    });
+  }
+
+  if (act === 'resend') {
+    const { col, id } = el.dataset;
+    const rec = Store.get(col).find(r => r.id === id);
+    if (!rec) return;
+    const users = Store.get('users').filter(u => (u.perms || []).includes(col));
+    const body = `
+      <div class="fgrid">
+        <div class="field full"><label>Send to user</label>
+          <select id="f_target">
+            <option value="">— Any user with access —</option>
+            ${users.map(u => `<option value="${esc(u.username)}">${esc(u.name || u.username)} (@${esc(u.username)})</option>`).join('')}
+          </select>
+        </div>
+        <div class="field full"><label>Correction note</label>
+          <textarea id="f_note" rows="3" placeholder="Describe what needs to be corrected…"></textarea>
+        </div>
+      </div>`;
+    openModal('Resend for Correction', body, async () => {
+      const target = $('#f_target').value;
+      const note = $('#f_note').value.trim() || 'Please verify and correct this entry.';
+      await Store.upsert('tasks', {
+        username: target || 'ALL', page: col, recordId: id,
+        note, status: 'open', createdAt: Date.now()
+      });
+      await audit('RESEND', `${col}/${id} → ${target || 'ALL'}`);
+      toast('Correction request sent');
+    }, 'Send Request');
+  }
+
+  if (act === 'del-task') { await Store.remove('tasks', el.dataset.id); toast('Request removed'); }
+
+  /* ---------- export ---------- */
+  if (act === 'export') {
+    exportCSV(el.dataset.col);
+  }
+  if (act === 'export-analytics') {
+    exportCSV('analytics');
+  }
+});
+
+/* ---------- new user form ---------- */
+function openNewUserForm() {
+  const body = `
+    <div class="fgrid">
+      <div class="field"><label>Full Name</label><input id="nu_name" type="text" placeholder="Operator name"/></div>
+      <div class="field"><label>Username</label><input id="nu_user" type="text" placeholder="unique username"/></div>
+      <div class="field"><label>Password</label><input id="nu_pass" type="password" placeholder="min 6 chars"/></div>
+      <div class="field"><label>Role</label>
+        <select id="nu_role"><option value="user">User</option><option value="admin">Admin</option></select>
+      </div>
+      <div class="field full"><label>Dashboard Access</label>
+        <div class="fgrid" style="grid-template-columns:1fr 1fr">
+          ${PAGES.filter(p => !p.adminOnly).map(p => `
+            <label style="display:flex;gap:9px;align-items:center;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid var(--stroke);cursor:pointer">
+              <input type="checkbox" data-nperm="${p.id}" ${p.id === 'home' ? 'checked' : ''} style="width:16px;height:16px;accent-color:#22d3ee"/>
+              <span style="font-size:12.5px">${p.icon} ${p.label}</span>
+            </label>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  openModal('Create New User', body, async () => {
+    const name = $('#nu_name').value.trim();
+    const username = $('#nu_user').value.trim();
+    const pass = $('#nu_pass').value;
+    const role = $('#nu_role').value;
+    const perms = $$('[data-nperm]').filter(c => c.checked).map(c => c.dataset.nperm);
+
+    if (!/^[a-zA-Z0-9._-]{3,20}$/.test(username)) throw new Error('Invalid username format');
+    if (pass.length < 6) throw new Error('Password must be at least 6 characters');
+    if (Store.get('users').some(u => u.username.toLowerCase() === username.toLowerCase())) throw new Error('Username already exists');
+
+    await Store.upsert('users', {
+      username, name: name || username, role, active: true, perms,
+      pass: await hashPw(username, pass), createdAt: Date.now()
+    });
+    await audit('USER_CREATE', `${username} (${role})`);
+    toast('User created successfully');
+  }, 'Create User');
+}
+
+/* ============================================================
+   NEW FEATURES: search, manpower, plant stops, truck/hourly/plant-time forms
+   ============================================================ */
+const canTime = () => currentUser && (currentUser.role === 'admin' || (currentUser.perms || []).includes('plantTimes'));
+const stamp = (d, t) => new Date(`${d}T${t || '00:00'}`).getTime();
+const normVeh = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const fmtMin = m => `${Math.floor(m / 60)}h ${m % 60}m`;
+const FIELD_LABELS = Object.fromEntries([...METRICS, ...CONSUMABLES].map(m => [m.k, m.l]));
+
+/* ---------- trucks: vehicles currently inside plant ---------- */
+function inPlantVehicles() {
+  const last = {};
+  [...Store.get('trucks')].sort((a, b) => stamp(a.date, a.time) - stamp(b.date, b.time)).forEach(t => { last[normVeh(t.vehicle)] = t; });
+  return Object.values(last).filter(t => t.direction === 'IN' && normVeh(t.vehicle));
+}
+
+function openTruckForm() {
+  const fields = [
+    { k: 'date', l: 'Date', t: 'date', def: today() },
+    { k: 'time', l: 'Time', t: 'time', def: nowHM() },
+    { k: 'direction', l: 'Direction', t: 'select', opts: [{ v: 'IN', l: 'Truck In' }, { v: 'OUT', l: 'Truck Out' }, { v: 'EMPTY', l: 'Empty Out' }] },
+    { k: 'vehicle', l: 'Vehicle Number', t: 'text', ph: 'e.g. WB-12-AB-1234' },
+    { k: 'invoice', l: 'Invoice / DC No.', t: 'text' },
+    { k: 'qty', l: 'Cylinder Qty', t: 'number', min: 0 },
+    { k: 'remarks', l: 'Remarks', t: 'text', full: true },
+  ];
+  const body = `<div class="fgrid">${fields.map(f => fieldHTML(f)).join('')}</div><div id="tkHint" class="hint"></div><datalist id="vehList"></datalist>`;
+  openModal('Log Truck Movement', body, async () => {
+    const data = {};
+    fields.forEach(f => { const el = $('#f_' + f.k); data[f.k] = f.t === 'number' ? Number(el.value || 0) : el.value; });
+    data.vehicle = data.vehicle.trim().toUpperCase();
+    if (!data.vehicle) throw new Error('Enter the vehicle number');
+    const inside = inPlantVehicles().find(t => normVeh(t.vehicle) === normVeh(data.vehicle));
+    if (data.direction === 'IN' && inside) throw new Error('This vehicle is already inside the plant.');
+    if (data.direction !== 'IN' && !inside) throw new Error('Vehicle is not inside the plant. Log Truck In first.');
+    await Store.upsert('trucks', data);
+    await audit('TRUCK_LOG', `${data.direction} ${data.vehicle}`);
+    toast('Truck movement logged');
+  }, '💾 Save Movement');
+  const veh = $('#f_vehicle'), dir = $('#f_direction'), hint = $('#tkHint');
+  const sync = fill => {
+    const out = dir.value !== 'IN';
+    if (!out) { veh.removeAttribute('list'); hint.textContent = ''; return; }
+    $('#vehList').innerHTML = inPlantVehicles().map(t => `<option value="${esc(t.vehicle)}">`).join('');
+    veh.setAttribute('list', 'vehList');
+    const hit = inPlantVehicles().find(t => normVeh(t.vehicle) === normVeh(veh.value));
+    if (hit) {
+      hint.textContent = `✔ In plant since ${hit.time} (${hit.date}). Invoice & qty auto-filled — you can edit them.`;
+      if (fill) { $('#f_invoice').value = hit.invoice || ''; $('#f_qty').value = hit.qty || 0; }
+    } else hint.textContent = `Only vehicles inside the plant (${inPlantVehicles().length} now) can go out. Pick one from the list.`;
+  };
+  veh.addEventListener('input', () => sync(true));
+  dir.addEventListener('change', () => sync(true));
+  sync(false);
+}
+
+/* ---------- hourly: auto total ---------- */
+function openHourlyForm() {
+  const cats = ['c142', 'c19', 'c35', 'c47', 'c5', 'c422'];
+  const fields = [
+    { k: 'date', l: 'Date', t: 'date', def: today() },
+    { k: 'hour', l: 'Hour (24h)', t: 'select', opts: Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), def: String(new Date().getHours()).padStart(2, '0') },
+    ...metricFields().filter(f => f.k !== 'totalCyl'),
+  ];
+  const body = `<div class="fgrid">${fields.map(f => fieldHTML(f)).join('')}
+    <div class="field full"><label>Total Cylinders Filled (auto)</label>
+    <input id="f_totalAuto" type="text" readonly value="0" style="font-weight:800;color:#7dd3fc"/></div></div>`;
+  const bg = openModal('Add Hourly Filling Entry', body, async () => {
+    const data = {};
+    fields.forEach(f => { const el = $('#f_' + f.k); data[f.k] = f.t === 'number' ? Number(el.value || 0) : el.value; });
+    data.totalCyl = cats.reduce((a, k) => a + Number(data[k] || 0), 0);
+    if (Store.get('hourly').some(r => r.date === data.date && r.hour === data.hour)) throw new Error('This hour is already entered for that date.');
+    await Store.upsert('hourly', data);
+    await audit('HOURLY_ADD', `${data.hour}:00 → ${data.totalCyl} cyl`);
+    toast('Hourly entry saved');
+  }, '💾 Save Entry');
+  const upd = () => { $('#f_totalAuto').value = num(cats.reduce((a, k) => a + Number($('#f_' + k).value || 0), 0)); };
+  cats.forEach(k => bg.querySelector('#f_' + k).addEventListener('input', upd));
+}
+
+/* ---------- plant start/close (daily + shift wise) ---------- */
+function openPlantTimes() {
+  if (!canTime()) { toast('Not allowed — ask the admin for Plant Time access.', 'err'); return; }
+  const d = today();
+  const rec = Store.get('plant').find(p => p.date === d) || { id: d, date: d };
+  openForm({
+    title: `Plant Start / Close Time — ${d}`, values: rec, saveLabel: '💾 Save Times',
+    fields: [
+      { k: 'startTime', l: 'Plant Start (Daily)', t: 'time' }, { k: 'closeTime', l: 'Plant Close (Daily)', t: 'time' },
+      { k: 'aStart', l: 'Shift A Start', t: 'time' }, { k: 'aClose', l: 'Shift A Close', t: 'time' },
+      { k: 'bStart', l: 'Shift B Start', t: 'time' }, { k: 'bClose', l: 'Shift B Close', t: 'time' },
+    ],
+    onSave: async data => {
+      const status = data.closeTime ? 'stopped' : (data.startTime ? 'running' : (rec.status || 'stopped'));
+      await Store.upsert('plant', { ...rec, ...data, date: d, id: d, status });
+      await audit('PLANT_TIMES', `${data.startTime || '-'} → ${data.closeTime || '-'}`);
+      toast('Plant timings saved');
+    }
+  });
+}
+
+function stopDur(s) {
+  const end = s.status === 'closed' ? stamp(s.resumeDate, s.resumeTime) : Date.now();
+  return Math.max(0, Math.round((end - stamp(s.date, s.stopTime)) / 60000));
+}
+function stopSummaryText() {
+  const open = Store.get('stops').find(s => s.status === 'open');
+  if (open) return `⛔ Plant STOPPED: ${open.reason} — since ${open.stopTime} (${fmtMin(stopDur(open))})`;
+  const td = Store.get('stops').filter(s => s.date === today());
+  return `🟢 No active stop · Stops today: ${td.length} (${fmtMin(td.reduce((a, s) => a + stopDur(s), 0))})`;
+}
+const stopTickerText = () => esc(stopSummaryText());
+function homeShiftBlock(p) {
+  const t = (a, b) => `${a || '--:--'} → ${b || '--:--'}`;
+  return `<div class="mini" style="margin-bottom:6px">Shift wise timings</div>
+    <div class="grid g2" style="margin-bottom:12px">
+      <div class="kpi blue"><div class="kpi-l">Shift A</div><div class="kpi-v" style="font-size:16px">${t(p.aStart, p.aClose)}</div></div>
+      <div class="kpi violet"><div class="kpi-l">Shift B</div><div class="kpi-v" style="font-size:16px">${t(p.bStart, p.bClose)}</div></div>
+    </div>
+    <div class="mini" style="margin-bottom:12px">${esc(stopSummaryText())}</div>`;
+}
+
+/* ---------- plant stop dashboard ---------- */
+const STOP_REASONS = ['Power failure', 'Equipment / machine breakdown', 'Planned maintenance', 'LPG / product unavailable', 'Safety / emergency', 'Shift change / break', 'Other'];
+
+function openStopForm() {
+  if (Store.get('stops').some(s => s.status === 'open')) { toast('Plant is already stopped. Log the resume first.', 'err'); return; }
+  openForm({
+    title: 'Plant Stop Entry', saveLabel: '⛔ Log Plant Stop',
+    fields: [
+      { k: 'date', l: 'Stop Date', t: 'date', def: today() }, { k: 'stopTime', l: 'Stop Time', t: 'time', def: nowHM() },
+      { k: 'reason', l: 'Reason for Stop', t: 'select', opts: STOP_REASONS, full: true },
+      { k: 'details', l: 'Details', t: 'textarea', full: true, ph: 'Describe the reason (required for Other)' },
+    ],
+    onSave: async data => {
+      if (data.reason === 'Other' && !data.details.trim()) throw new Error('Please describe the reason');
+      await Store.upsert('stops', { ...data, status: 'open' });
+      await audit('PLANT_STOP', `${data.date} ${data.stopTime} ${data.reason}`);
+      toast('Plant stop logged');
+    }
+  });
+}
+function openResumeForm(id) {
+  const rec = Store.get('stops').find(s => s.id === id);
+  if (!rec) return;
+  openForm({
+    title: 'Plant Resume Entry', values: rec, saveLabel: '▶ Log Plant Resume',
+    fields: [
+      { k: 'resumeDate', l: 'Resume Date', t: 'date', def: today() }, { k: 'resumeTime', l: 'Resume Time', t: 'time', def: nowHM() },
+      { k: 'resumeNote', l: 'Remarks', t: 'textarea', full: true },
+    ],
+    onSave: async data => {
+      if (stamp(data.resumeDate, data.resumeTime) < stamp(rec.date, rec.stopTime)) throw new Error('Resume time cannot be before stop time');
+      await Store.upsert('stops', { ...rec, ...data, status: 'closed' });
+      await audit('PLANT_RESUME', `${data.resumeDate} ${data.resumeTime}`);
+      toast('Plant resumed');
+    }
+  });
+}
+function renderStops(v) {
+  const all = [...Store.get('stops')].sort((a, b) => stamp(b.date, b.stopTime) - stamp(a.date, a.stopTime));
+  const open = all.find(s => s.status === 'open');
+  const td = all.filter(s => s.date === today());
+  const ce = canEdit('stops');
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Plant Status', open ? 'STOPPED' : 'RUNNING', '', open ? 'rose' : 'lime', open ? `${esc(open.reason)} since ${esc(open.stopTime)}` : 'No active stop')}
+      ${kpiCard('Stops Today', num(td.length), 'stops', 'amber')}
+      ${kpiCard('Downtime Today', fmtMin(td.reduce((a, s) => a + stopDur(s), 0)), '', 'violet', 'Includes ongoing stop')}
+      ${kpiCard('Total Stops Logged', num(all.length), '', 'cyan')}
+    </div>
+    <div class="card hl">
+      <div class="card-h"><h3>⛔ Plant Stop &amp; Resume Register</h3>
+        <div class="row">
+          ${ce ? (open ? `<button class="btn primary sm" data-act="stop-resume" data-id="${open.id}">▶ Plant Resume</button>` : `<button class="btn danger sm" data-act="stop-add">⛔ Log Plant Stop</button>`) : ''}
+          <button class="btn ghost sm" data-act="export" data-col="stops">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Stopped</th><th>Reason</th><th>Resumed</th><th>Duration</th><th>By</th><th></th></tr></thead>
+        <tbody>${all.length ? all.map(s => `<tr>
+          <td>${esc(s.date)} <b>${esc(s.stopTime)}</b></td>
+          <td>${esc(s.reason)}${s.details ? `<div class="mini">${esc(s.details)}</div>` : ''}</td>
+          <td>${s.status === 'closed' ? `${esc(s.resumeDate)} <b>${esc(s.resumeTime)}</b>${s.resumeNote ? `<div class="mini">${esc(s.resumeNote)}</div>` : ''}` : '<span class="tag warn">STOPPED</span>'}</td>
+          <td><b>${fmtMin(stopDur(s))}</b></td><td class="mini">${esc(s._by || '—')}</td>
+          <td>${ce ? `<button class="btn danger sm" data-act="del" data-col="stops" data-id="${s.id}">✕</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="6" class="empty">No plant stops logged</td></tr>`}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* ---------- manpower dashboard ---------- */
+function contractorNames() {
+  return [...new Set([...Store.get('contractors').map(c => c.name), ...Store.get('manpower').map(m => m.contractor)].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+function openManpowerForm() {
+  const names = contractorNames(), NEW = '__new__';
+  const body = `<div class="fgrid">
+    <div class="field full"><label>Date &amp; Time (auto)</label><input id="mp_dt" readonly value="${today()}  ${nowHM()}"/></div>
+    <div class="field full"><label>Contractor</label><select id="mp_c">${names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}<option value="${NEW}" ${names.length ? '' : 'selected'}>➕ Add new contractor…</option></select></div>
+    <div class="field full ${names.length ? 'hidden' : ''}" id="mp_newwrap"><label>New contractor name</label><input id="mp_new" type="text" placeholder="Contractor name"/></div>
+    <div class="field"><label>Shift</label><select id="mp_s"><option value="A">Shift A</option><option value="B">Shift B</option></select></div>
+    <div class="field"><label>Movement</label><select id="mp_d"><option value="IN">Manpower IN</option><option value="OUT">Manpower OUT</option></select></div>
+    <div class="field full"><label>Manpower (persons)</label><input id="mp_n" type="number" min="1" step="1"/></div></div>`;
+  const bg = openModal('Manpower Entry', body, async () => {
+    const sel = $('#mp_c').value;
+    const contractor = (sel === NEW ? $('#mp_new').value : sel).trim();
+    const count = Number($('#mp_n').value || 0);
+    if (!contractor) throw new Error('Select or enter a contractor');
+    if (count < 1) throw new Error('Enter manpower count');
+    if (sel === NEW && !names.some(n => n.toLowerCase() === contractor.toLowerCase())) await Store.upsert('contractors', { name: contractor });
+    await Store.upsert('manpower', { date: today(), time: nowHM(), contractor, shift: $('#mp_s').value, direction: $('#mp_d').value, count });
+    await audit('MANPOWER_ADD', `${contractor} ${$('#mp_d').value} ${count}`);
+    toast('Manpower entry saved');
+  }, '💾 Save Entry');
+  bg.querySelector('#mp_c').addEventListener('change', e => bg.querySelector('#mp_newwrap').classList.toggle('hidden', e.target.value !== NEW));
+}
+function renderManpower(v) {
+  const d = state.mpDate || today();
+  const rows = Store.get('manpower').filter(m => m.date === d).sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+  const blank = () => ({ A: { i: 0, o: 0 }, B: { i: 0, o: 0 } });
+  const agg = {}, T = blank();
+  rows.forEach(m => {
+    const c = m.contractor || '—', s = m.shift === 'B' ? 'B' : 'A', k = m.direction === 'OUT' ? 'o' : 'i';
+    agg[c] = agg[c] || blank(); agg[c][s][k] += Number(m.count || 0); T[s][k] += Number(m.count || 0);
+  });
+  const cells = x => `<td>${x.A.i}</td><td>${x.A.o}</td><td>${x.B.i}</td><td>${x.B.o}</td><td>${x.A.i + x.B.i}</td><td>${x.A.o + x.B.o}</td><td><b>${x.A.i + x.B.i - x.A.o - x.B.o}</b></td>`;
+  const ce = canEdit('manpower');
+  v.innerHTML = `
+    <div class="grid g4">
+      ${kpiCard('Total IN', num(T.A.i + T.B.i), 'persons', 'lime', `A: ${T.A.i} · B: ${T.B.i}`)}
+      ${kpiCard('Total OUT', num(T.A.o + T.B.o), 'persons', 'rose', `A: ${T.A.o} · B: ${T.B.o}`)}
+      ${kpiCard('Present (IN − OUT)', num(T.A.i + T.B.i - T.A.o - T.B.o), 'persons', 'cyan')}
+      ${kpiCard('Contractors', num(Object.keys(agg).length), '', 'violet', d)}
+    </div>
+    <div class="card hl">
+      <div class="card-h"><h3>👷 Contractor &amp; Shift wise Manpower</h3>
+        <div class="row"><input type="date" id="mpDate" value="${d}" style="padding:7px 10px;border-radius:9px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--txt)"/>
+        ${ce ? `<button class="btn primary sm" data-act="add-manpower">+ Manpower Entry</button>` : ''}</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Contractor</th><th>A In</th><th>A Out</th><th>B In</th><th>B Out</th><th>Total In</th><th>Total Out</th><th>Present</th></tr></thead>
+        <tbody>${Object.keys(agg).length ? Object.entries(agg).map(([c, x]) => `<tr><td><b>${esc(c)}</b></td>${cells(x)}</tr>`).join('') + `<tr><td><b>TOTAL</b></td>${cells(T)}</tr>` : `<tr><td colspan="8" class="empty">No manpower entries for ${d}</td></tr>`}</tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>🗂️ Manpower Register — ${d}</h3><button class="btn ghost sm" data-act="export" data-col="manpower">⬇ Export CSV</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Time</th><th>Contractor</th><th>Shift</th><th>Movement</th><th>Persons</th><th>By</th><th></th></tr></thead>
+        <tbody>${rows.length ? rows.map(m => `<tr><td>${esc(m.time || '—')}</td><td>${esc(m.contractor)}</td><td><span class="tag info">Shift ${esc(m.shift)}</span></td>
+          <td><span class="tag ${m.direction === 'OUT' ? 'warn' : 'ok'}">${m.direction === 'OUT' ? 'OUT' : 'IN'}</span></td><td><b>${num(m.count)}</b></td><td class="mini">${esc(m._by || '—')}</td>
+          <td>${ce ? `<button class="btn danger sm" data-act="del" data-col="manpower" data-id="${m.id}">✕</button>` : ''}</td></tr>`).join('') : `<tr><td colspan="7" class="empty">No records</td></tr>`}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* ---------- search & filter dashboard ---------- */
+const SEARCH_SETS = [['all', 'All data'], ['trucks', 'Truck Movement'], ['hourly', 'Hourly Filling'], ['shift', 'Shift Filling'], ['manpower', 'Manpower'], ['stops', 'Plant Stops'], ['weekly', 'Weekly Consumables']];
+function searchRows() {
+  const S = state.search, terms = S.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const out = [];
+  SEARCH_SETS.slice(1).forEach(([ds]) => {
+    if (S.col !== 'all' && S.col !== ds) return;
+    Store.get(ds).forEach(r => {
+      const dt = r.date || r.weekStart || '';
+      if (S.from && dt < S.from) return;
+      if (S.to && dt > S.to) return;
+      if (S.shift && r.shift !== S.shift) return;
+      if (S.dir && (r.direction || (ds === 'manpower' ? 'IN' : '')) !== S.dir) return;
+      const text = (ds + ' ' + Object.entries(r).filter(([k]) => !['id', '_at', 'pass'].includes(k)).map(([, x]) => x).join(' ')).toLowerCase();
+      if (terms.every(t => text.includes(t))) out.push({ ds, r, dt });
+    });
+  });
+  return out.sort((a, b) => b.dt.localeCompare(a.dt));
+}
+function updateSearchResults() {
+  const box = $('#searchResults'); if (!box) return;
+  const rows = searchRows(), counts = {};
+  rows.forEach(x => counts[x.ds] = (counts[x.ds] || 0) + 1);
+  const skip = ['id', '_at', '_by', 'date', 'time', 'stopTime', 'hour', 'shift', 'weekStart', 'pass'];
+  const name = ds => (SEARCH_SETS.find(s => s[0] === ds) || [])[1];
+  box.innerHTML = `
+    <div class="card"><div class="card-h"><h3>Results: ${num(rows.length)}</h3>
+      <div class="row">${Object.entries(counts).map(([k, c]) => `<span class="tag info">${esc(name(k))}: ${c}</span>`).join('')}</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Data</th><th>Date</th><th>Time / Hour</th><th>Shift</th><th>Details</th><th>By</th></tr></thead>
+        <tbody>${rows.length ? rows.slice(0, 300).map(({ ds, r, dt }) => `<tr>
+          <td><span class="tag ok">${esc(name(ds))}</span></td><td>${esc(dt)}</td>
+          <td>${esc(r.time || r.stopTime || (r.hour ? r.hour + ':00' : '—'))}</td><td>${esc(r.shift || '—')}</td>
+          <td>${Object.entries(r).filter(([k, x]) => !skip.includes(k) && x !== '' && x !== 0 && x != null).map(([k, x]) => `<span style="margin-right:12px;white-space:nowrap"><span class="mini">${esc(FIELD_LABELS[k] || k)}:</span> <b>${esc(x)}</b></span>`).join('')}</td>
+          <td class="mini">${esc(r._by || '—')}</td></tr>`).join('') : `<tr><td colspan="6" class="empty">No matching records</td></tr>`}</tbody>
+      </table></div>${rows.length > 300 ? `<div class="mini" style="padding:8px">Showing first 300 — narrow the filters or export.</div>` : ''}</div>`;
+}
+function renderSearch(v) {
+  const S = state.search = state.search || { q: '', col: 'all', shift: '', dir: '', from: '', to: '' };
+  const sel = (k, opts) => `<select data-sf="${k}">${opts.map(([val, l]) => `<option value="${val}" ${S[k] === val ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h"><h3>🔎 Search &amp; Filter</h3><button class="btn ghost sm" data-act="search-export">⬇ Export Results</button></div>
+      <div class="fgrid">
+        <div class="field full"><label>Keyword</label><input data-sf="q" type="text" value="${esc(S.q)}" placeholder="Vehicle no., invoice, contractor, stop reason, remarks…"/></div>
+        <div class="field"><label>Dashboard / Data</label>${sel('col', SEARCH_SETS)}</div>
+        <div class="field"><label>Shift</label>${sel('shift', [['', 'Any'], ['A', 'Shift A'], ['B', 'Shift B']])}</div>
+        <div class="field"><label>Movement (Truck / Manpower)</label>${sel('dir', [['', 'Any'], ['IN', 'IN'], ['OUT', 'OUT'], ['EMPTY', 'Empty Out']])}</div>
+        <div class="field"><label>From date</label><input data-sf="from" type="date" value="${esc(S.from)}"/></div>
+        <div class="field"><label>To date</label><input data-sf="to" type="date" value="${esc(S.to)}"/></div>
+        <div class="field"><label>&nbsp;</label><button class="btn ghost block" data-act="search-reset">Clear filters</button></div>
+      </div>
+    </div>
+    <div id="searchResults"></div>`;
+  updateSearchResults();
+}
+
+/* ---------- listeners for new features ---------- */
+['input', 'change'].forEach(ev => document.addEventListener(ev, e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.sf && state.search) { state.search[t.dataset.sf] = t.value; updateSearchResults(); }
+  if (ev === 'change' && t.id === 'mpDate') { state.mpDate = t.value || today(); render(); }
+}));
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'goto') {
+    if (!allowedPages().some(p => p.id === el.dataset.page)) { toast('You do not have access to that dashboard', 'err'); return; }
+    state.page = el.dataset.page; renderNav(); render();
+  }
+  if (act === 'stop-add') openStopForm();
+  if (act === 'stop-resume') openResumeForm(el.dataset.id);
+  if (act === 'search-reset') { state.search = { q: '', col: 'all', shift: '', dir: '', from: '', to: '' }; render(); }
+  if (act === 'search-export') {
+    const rows = searchRows().map(({ ds, r }) => ({ Data: ds, ...r }));
+    if (!rows.length) { toast('Nothing to export', 'err'); return; }
+    const keys = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(k => k !== 'pass');
+    const csv = [keys.join(','), ...rows.map(r => keys.map(k => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `lpg_search_${today()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  }
+});
+
+/* ============================================================
+   SETTINGS: Firebase configuration (admin only) + first-time setup gate
+   ============================================================ */
+const FB_KEY = 'lpg_fb_config', SETUP_KEY = 'lpg_setup_done';
+const fbEmbedded = () => !/PASTE/.test(firebaseConfig.apiKey);
+const setupDone = () => { try { return localStorage.getItem(SETUP_KEY) === '1'; } catch (e) { return false; } } ;
+const isSetupComplete = () => fbEmbedded() || setupDone();
+function savedFbConfig() { try { const c = JSON.parse(localStorage.getItem(FB_KEY) || 'null'); return c && c.apiKey ? c : null; } catch (e) { return null; } }
+function loadScript(urls) {
+  return urls.reduce((p, u) => p.catch(() => new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = u; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + u)); document.head.appendChild(s);
+  })), Promise.reject());
+}
+async function loadFbSdk() {
+  if (typeof firebase !== 'undefined') return;
+  for (const n of ['app', 'auth', 'firestore'])
+    await loadScript([`https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-${n}-compat.js`, `https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-${n}-compat.min.js`]);
+}
+const FB_SKIP = 'lpg_fb_skip';
+async function loadSavedFirebase() {
+  try { if (localStorage.getItem(FB_SKIP) === '1') return; } catch (e) {}
+  const cfg = fbEmbedded() ? firebaseConfig : savedFbConfig();
+  if (!cfg) return;
+  try {
+    await loadFbSdk();
+    firebaseConfig = cfg;
+    fb.app = firebase.initializeApp(cfg); fb.auth = firebase.auth(); fb.db = firebase.firestore();
+    try { fb.db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
+    FB_ENABLED = true;
+  } catch (e) { console.warn('Firebase unavailable → local mode', e); FB_ENABLED = false; }
+}
+function parseFbConfig(text) {
+  const out = {};
+  ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId', 'storeKey'].forEach(k => {
+    const m = new RegExp('["\']?' + k + '["\']?\\s*:\\s*["\']([^"\']+)["\']').exec(text);
+    if (m) out[k] = m[1].trim();
+  });
+  return out;
+}
+async function testFirebase(cfg) {
+  const col = String(cfg.storeKey || 'data').replace(/[^A-Za-z0-9_-]/g, '') || 'data';
+  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.projectId)}/databases/(default)/documents/${col}?pageSize=1&key=${encodeURIComponent(cfg.apiKey)}`;
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 15000);
+  let res, body = {};
+  try { res = await fetch(url, { signal: ctl.signal }); try { body = await res.json(); } catch (e) {} }
+  catch (e) { throw new Error('Cannot reach Google servers from this device (check internet, VPN, firewall or ad-blocker).'); }
+  finally { clearTimeout(tm); }
+  const err = body.error || {}, txt = (err.status || '') + ' ' + (err.message || '') + ' ' + JSON.stringify(err.details || '');
+  if (/API_KEY_HTTP_REFERRER_BLOCKED|referer/i.test(txt)) throw new Error('API key is restricted and blocks this website. In Google Cloud → Credentials, add this site address or remove the restriction.');
+  if (/API key not valid|API_KEY_INVALID/i.test(txt)) throw new Error('API key is not valid — copy it again from Firebase Project settings.');
+  if (/SERVICE_DISABLED|has not been used|is disabled/i.test(txt)) throw new Error('Cloud Firestore is not enabled for this project. Create the Firestore database first.');
+  if (res.status === 404 || /NOT_FOUND|does not exist/i.test(txt)) throw new Error('Firestore database not found. In Firebase console → Firestore Database → Create database. (Realtime Database is a different product.)');
+  if (res.status >= 500) throw new Error('Firebase service error ' + res.status + ' — try again shortly.');
+  if (!res.ok && err.status !== 'PERMISSION_DENIED') throw new Error(err.message || 'Firebase returned status ' + res.status);
+  /* 200 or PERMISSION_DENIED (rules) both mean the server was reached */
+}
+function fbMsg(text, ok) { const m = $('#fbMsg'); if (m) { m.className = 'msg ' + (ok ? 'ok' : 'err'); m.textContent = text; } }
+
+/* ============================================================
+   SYNC INDICATOR
+   ============================================================ */
+let syncErr = '', lastSync = 0;
+function updateSyncPill() {
+  const p = $('#syncPill'), t = $('#syncTxt'); if (!p || !t) return;
+  let cls, txt, tip = '';
+  if (!FB_ENABLED) { cls = 'warn'; txt = 'LOCAL ONLY · NOT SYNCED'; tip = 'Data is saved only in this browser. Configure Firebase in Settings for live sync.'; }
+  else if (!navigator.onLine) { cls = 'err'; txt = 'OFFLINE · SYNC PAUSED'; }
+  else if (syncErr) { cls = 'err'; txt = 'SYNC ERROR'; tip = syncErr; }
+  else if (!lastSync) { cls = 'warn'; txt = 'CONNECTING…'; }
+  else { cls = 'ok'; txt = 'LIVE SYNC · ' + new Date(lastSync).toLocaleTimeString('en-GB'); tip = 'Connected to Firebase. Last update received at this time.'; }
+  const col = { ok: ['#34d399', 'rgba(52,211,153,.12)', 'rgba(52,211,153,.35)', '#a7f3d0'], warn: ['#fbbf24', 'rgba(251,191,36,.12)', 'rgba(251,191,36,.4)', '#fde68a'], err: ['#fb7185', 'rgba(251,113,133,.14)', 'rgba(251,113,133,.4)', '#ffc4cc'] }[cls];
+  t.textContent = txt; p.title = tip;
+  p.style.background = col[1]; p.style.borderColor = col[2]; p.style.color = col[3];
+  const dot = p.querySelector('.dot'); if (dot) dot.style.background = col[0];
+}
+setInterval(updateSyncPill, 2000);
+window.addEventListener('online', updateSyncPill); window.addEventListener('offline', updateSyncPill);
+
+/* ============================================================
+   SETTINGS: Firebase configuration (separate boxes) — admin only
+   ============================================================ */
+const FB_FIELDS = [['apiKey', 'API Key'], ['authDomain', 'Auth Domain'], ['projectId', 'Project ID'], ['storageBucket', 'Storage Bucket'], ['messagingSenderId', 'Messaging Sender ID'], ['appId', 'App ID'], ['storeKey', 'Store Key (data folder name, optional)']];
+const storeKey = () => String(firebaseConfig.storeKey || 'data').replace(/[^A-Za-z0-9_-]/g, '') || 'data';
+function readFbBoxes() {
+  const c = {};
+  FB_FIELDS.forEach(([k]) => { c[k] = ($('#fb_' + k).value || '').trim(); });
+  if (!c.apiKey || !c.projectId || !c.appId) { fbMsg('API Key, Project ID and App ID are required.', false); return null; }
+  return c;
+}
+function renderSettings(v) {
+  if (currentUser.role !== 'admin') { v.innerHTML = ''; return; }
+  const cfg = (fbEmbedded() ? firebaseConfig : savedFbConfig()) || {};
+  const snippet = cfg.apiKey ? `const firebaseConfig = {\n${FB_FIELDS.map(([k]) => `  ${k}: "${cfg[k] || ''}"`).join(',\n')}\n};` : '';
+  const local = readLocalCopy(), done = isSetupComplete();
+  const step = (n, t) => `<div style="display:flex;align-items:center;gap:10px;margin:18px 0 10px"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#818cf8);color:#06101f;font-weight:800;display:grid;place-items:center;flex:none">${n}</span><b>${t}</b></div>`;
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h"><h3>🔥 Firebase Setup</h3>
+        <span class="tag ${FB_ENABLED ? 'ok' : 'warn'}">${FB_ENABLED ? '● Firebase Live' : '● Local Mode'}</span></div>
+      <div class="mini">Admin only — users never see this page. Users can sign in only after setup is completed: ${done ? '<b style="color:#a7f3d0">setup complete</b>' : '<b style="color:#fbbf24">setup pending, users are blocked</b>'}.</div>
+
+      ${step(1, 'Enter your Firebase project details')}
+      <div class="fgrid">
+        ${FB_FIELDS.map(([k, l]) => `<div class="field"><label>${l}</label><input id="fb_${k}" type="text" autocomplete="off" value="${esc(cfg[k] || '')}" placeholder="${k === 'storeKey' ? 'data (default)' : k}"/></div>`).join('')}
+      </div>
+      <details style="margin-top:6px"><summary class="mini" style="cursor:pointer">Quick paste the whole config to auto-fill the boxes</summary>
+        <textarea id="fbPaste" rows="5" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--stroke);background:rgba(255,255,255,.045);color:var(--txt)" placeholder='{ apiKey: "…", authDomain: "…", … }'></textarea>
+        <button class="btn ghost sm" style="margin-top:8px" data-act="fb-fill">Fill boxes</button></details>
+
+      ${step(2, 'Test the connection')}
+      <div class="row"><button class="btn ghost sm" data-act="fb-test">🔌 Test Connection</button></div>
+
+      ${step(3, 'First time? Move your data (optional)')}
+      <div class="mini" style="margin-bottom:10px">This device currently holds: ${SYNC_COLS.map(c => `<span class="tag info">${esc(c)}: ${(local[c] || []).length}</span>`).join(' ')}</div>
+      <div class="row">
+        <button class="btn primary sm" data-act="fb-push">⬆ Push data to cloud</button>
+        <button class="btn ghost sm" data-act="fb-pull">⬇ Pull data from cloud</button>
+      </div>
+      <div class="hint"><b>Push</b> copies this device's data to Firebase. <b>Pull</b> copies Firebase data into this device. Both ask for the cloud admin username &amp; password (a new one is created if the cloud has no admin yet) and let you Merge or Replace. Users and the audit log are not transferred.</div>
+
+      ${step(4, 'Apply')}
+      <div class="row">
+        <button class="btn primary sm" data-act="fb-save">💾 Save &amp; Apply</button>
+        <button class="btn ghost sm" data-act="fb-local">Use Local Mode (no Firebase)</button>
+        ${savedFbConfig() ? `<button class="btn danger sm" data-act="fb-clear">Remove saved config</button>` : ''}
+      </div>
+      <div id="fbMsg" class="msg"></div>
+      <div class="hint">Before applying: create a <b>Firestore database</b>, publish the rules, and enable <b>Email/Password</b> sign-in. After applying, sign in with the cloud admin account (or register the first account — it becomes admin). The header badge shows <b>LIVE SYNC</b> when connected. The saved config stays in this browser; for other devices paste the snippet below into section 1 of the hosted file.</div>
+      ${snippet ? `<div class="field full" style="margin-top:12px"><label>Permanent config snippet (for hosted file)</label><textarea readonly rows="8" onclick="this.select()">${esc(snippet)}</textarea></div>` : ''}
+    </div>`;
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act="fb-fill"]'); if (!el) return;
+  const c = parseFbConfig($('#fbPaste').value);
+  FB_FIELDS.forEach(([k]) => { if (c[k]) $('#fb_' + k).value = c[k]; });
+  fbMsg(c.apiKey ? 'Boxes filled — review and press Save & Apply.' : 'Could not read the pasted text.', !!c.apiKey);
+});
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act;
+  if (!act.startsWith('fb-') || !currentUser || currentUser.role !== 'admin') return;
+  const readCfg = () => {
+    return readFbBoxes();
+  };
+  if (act === 'fb-test') {
+    const c = readCfg(); if (!c) return;
+    fbMsg('Testing connection…', true);
+    try { await testFirebase(c); fbMsg('✔ Firebase reachable. Config looks valid.', true); }
+    catch (err) { fbMsg('Connection failed: ' + (err.message || err), false); }
+  }
+  if (act === 'fb-save') {
+    const c = readCfg(); if (!c) return;
+    fbMsg('Testing connection…', true);
+    try { await testFirebase(c); }
+    catch (err) { if (!confirm(`Connection test failed (${err.message || err}).\nSave this config anyway?`)) { fbMsg('Not saved: ' + (err.message || err), false); return; } }
+    try { localStorage.setItem(FB_KEY, JSON.stringify(c)); localStorage.setItem(SETUP_KEY, '1'); localStorage.removeItem(FB_SKIP); } catch (x) {}
+    await audit('FIREBASE_CONFIG', c.projectId);
+    toast('Firebase config saved — reloading'); setTimeout(() => location.reload(), 700);
+  }
+  if (act === 'fb-local') {
+    try { localStorage.removeItem(FB_KEY); localStorage.setItem(SETUP_KEY, '1'); } catch (x) {}
+    await audit('FIREBASE_CONFIG', 'local mode'); toast('Local mode set — users can now sign in'); setTimeout(() => location.reload(), 700);
+  }
+  if (act === 'fb-clear') {
+    if (!confirm('Remove the saved Firebase config?')) return;
+    try { localStorage.removeItem(FB_KEY); } catch (x) {}
+    await audit('FIREBASE_CONFIG', 'removed'); toast('Config removed — reloading'); setTimeout(() => location.reload(), 700);
+  }
+});
+
+/* ============================================================
+   ADMIN REPORTS: weekly / monthly export, analysis, share, Excel import
+   ============================================================ */
+const pad2 = n => String(n).padStart(2, '0');
+const ldate = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const pdate = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+const shiftDay = (iso, n) => { const d = pdate(iso); d.setDate(d.getDate() + n); return ldate(d); };
+
+const SECTIONS = [['hourly', 'Hourly Filling'], ['shift', 'Shift Filling'], ['trucks', 'Truck Movement'], ['manpower', 'Manpower'], ['stops', 'Plant Stops'], ['plant', 'Plant Timings'], ['weekly', 'Weekly Consumables']];
+const MK = ['totalCyl', 'c142', 'c19', 'c35', 'c47', 'c5', 'c422', 'totalMT', 'accuracy', 'dptGen', 'dptRecv', 'hrGen', 'evac', 'sqc', 'loss'];
+const COL_ORDER = {
+  hourly: ['date', 'hour', ...MK, '_by'], shift: ['date', 'shift', ...MK, '_by'],
+  trucks: ['date', 'time', 'direction', 'vehicle', 'invoice', 'qty', 'remarks', '_by'],
+  manpower: ['date', 'time', 'contractor', 'shift', 'direction', 'count', '_by'],
+  stops: ['date', 'stopTime', 'reason', 'details', 'resumeDate', 'resumeTime', 'resumeNote', 'status', '_by'],
+  plant: ['date', 'startTime', 'closeTime', 'aStart', 'aClose', 'bStart', 'bClose', 'status'],
+  weekly: ['weekStart', ...CONSUMABLES.map(c => c.k), '_by'],
+};
+const COL_LABELS = { date: 'Date', time: 'Time', hour: 'Hour', shift: 'Shift', direction: 'Movement', vehicle: 'Vehicle No.', invoice: 'Invoice / DC', qty: 'Qty', remarks: 'Remarks', contractor: 'Contractor', count: 'Persons', stopTime: 'Stop Time', reason: 'Stop Reason', details: 'Details', resumeDate: 'Resume Date', resumeTime: 'Resume Time', resumeNote: 'Resume Remarks', status: 'Status', startTime: 'Plant Start', closeTime: 'Plant Close', aStart: 'Shift A Start', aClose: 'Shift A Close', bStart: 'Shift B Start', bClose: 'Shift B Close', weekStart: 'Week Start', _by: 'Entered By' };
+const colLabel = k => COL_LABELS[k] || FIELD_LABELS[k] || k;
+
+function sectionRows(k, list) {
+  return list.map(r => {
+    const o = {};
+    COL_ORDER[k].forEach(c => { o[colLabel(c)] = r[c] ?? ''; });
+    if (k === 'stops') o['Duration (min)'] = stopDur(r);
+    return o;
+  });
+}
+function rpRange() {
+  const R = state.rp; let from, to;
+  if (R.type === 'daily') { from = to = R.date; }
+  else if (R.type === 'weekly') { const d = pdate(R.date); from = shiftDay(R.date, -((d.getDay() + 6) % 7)); to = shiftDay(from, 6); }
+  else if (R.type === 'monthly') { const d = pdate(R.date); from = ldate(new Date(d.getFullYear(), d.getMonth(), 1)); to = ldate(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
+  else { from = R.from || R.date; to = R.to || from; if (to < from) [from, to] = [to, from]; }
+  const len = Math.round((pdate(to) - pdate(from)) / 864e5) + 1;
+  const prevTo = shiftDay(from, -1), prevFrom = shiftDay(prevTo, -(len - 1));
+  return { from, to, prevFrom, prevTo, len };
+}
+function rpData(f, t) {
+  const inR = d => d >= f && d <= t, by = k => (a, b) => String(a[k] || '').localeCompare(String(b[k] || ''));
+  const D = {};
+  SECTIONS.forEach(([k]) => { D[k] = Store.get(k).filter(r => inR(k === 'weekly' ? r.weekStart : r.date)).sort(k === 'weekly' ? by('weekStart') : by('date')); });
+  return D;
+}
+function rpAnalysis(R) {
+  const rows = [], add = (l, u, c, p) => rows.push([l, u, Math.round(c * 100) / 100, Math.round(p * 100) / 100, Math.round(pctChange(c, p) * 10) / 10]);
+  const src = (f, t) => { const sh = Store.get('shift').filter(r => r.date >= f && r.date <= t), hr = Store.get('hourly').filter(r => r.date >= f && r.date <= t); return sh.length ? sh : hr; };
+  const avgAcc = (f, t) => { const s = src(f, t); return s.length ? s.reduce((a, r) => a + Number(r.accuracy || 0), 0) / s.length : 0; };
+  METRICS.forEach(m => m.k === 'accuracy'
+    ? add(m.l + ' (avg)', m.u, avgAcc(R.from, R.to), avgAcc(R.prevFrom, R.prevTo))
+    : add(m.l, m.u, aggFilling(R.from, R.to, m.k), aggFilling(R.prevFrom, R.prevTo, m.k)));
+  [['IN', 'Trucks In'], ['OUT', 'Trucks Out'], ['EMPTY', 'Empty Out']].forEach(([d, l]) => add(l, 'trips', aggTrucks(R.from, R.to, d), aggTrucks(R.prevFrom, R.prevTo, d)));
+  const mp = (f, t, out) => Store.get('manpower').filter(m => m.date >= f && m.date <= t && (m.direction === 'OUT') === out).reduce((a, m) => a + Number(m.count || 0), 0);
+  add('Manpower IN', 'persons', mp(R.from, R.to, false), mp(R.prevFrom, R.prevTo, false));
+  add('Manpower OUT', 'persons', mp(R.from, R.to, true), mp(R.prevFrom, R.prevTo, true));
+  const st = (f, t) => Store.get('stops').filter(s => s.date >= f && s.date <= t);
+  add('Plant Stops', 'count', st(R.from, R.to).length, st(R.prevFrom, R.prevTo).length);
+  add('Plant Downtime', 'min', st(R.from, R.to).reduce((a, s) => a + stopDur(s), 0), st(R.prevFrom, R.prevTo).reduce((a, s) => a + stopDur(s), 0));
+  CONSUMABLES.forEach(c => add(c.l, c.u, aggConsum(R.from, R.to, c.k), aggConsum(R.prevFrom, R.prevTo, c.k)));
+  return rows;
+}
+const loadXlsx = () => typeof XLSX !== 'undefined' ? Promise.resolve() : loadScript(['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']);
+async function loadPdfLibs() {
+  if (!(window.jspdf && window.jspdf.jsPDF)) await loadScript(['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js']);
+  if (!window.jspdf.jsPDF.API.autoTable) await loadScript(['https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js']);
+}
+const rpTitle = R => `LPG Plant Report — ${R.from}${R.to !== R.from ? ' to ' + R.to : ''}`;
+
+async function buildXlsx(R, D, A) {
+  await loadXlsx();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[rpTitle(R)], [`Compared with ${R.prevFrom} to ${R.prevTo}`], [], ['Metric', 'Unit', 'Current', 'Previous', 'Change %'], ...A]), 'Analysis');
+  SECTIONS.forEach(([k, l]) => { const rows = sectionRows(k, D[k]); if (rows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), l.slice(0, 31)); });
+  return new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+async function buildPdf(R, D, A) {
+  await loadPdfLibs();
+  const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  doc.setFontSize(16); doc.text(rpTitle(R), 40, 40);
+  doc.setFontSize(9); doc.text(`Compared with ${R.prevFrom} to ${R.prevTo} · Generated ${new Date().toLocaleString('en-GB')}`, 40, 56);
+  doc.autoTable({ startY: 70, head: [['Metric', 'Unit', 'Current', 'Previous', 'Change %']], body: A.map(r => r.map(String)), styles: { fontSize: 8 }, headStyles: { fillColor: [14, 116, 144] } });
+  SECTIONS.forEach(([k, l]) => {
+    const rows = sectionRows(k, D[k]); if (!rows.length) return;
+    const keys = Object.keys(rows[0]); let y = doc.lastAutoTable.finalY + 26;
+    if (y > 520) { doc.addPage(); y = 40; }
+    doc.setFontSize(12); doc.text(l, 40, y);
+    doc.autoTable({ startY: y + 6, head: [keys], body: rows.map(r => keys.map(c => String(r[c] ?? ''))), styles: { fontSize: 6.5, cellPadding: 2 }, headStyles: { fillColor: [30, 64, 175] } });
+  });
+  return doc.output('blob');
+}
+function downloadBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function rpExport(mode) {
+  const fmt = state.rp.fmt, R = rpRange(), D = rpData(R.from, R.to), A = rpAnalysis(R);
+  toast('Preparing ' + fmt.toUpperCase() + '…');
+  let blob;
+  try { blob = fmt === 'pdf' ? await buildPdf(R, D, A) : await buildXlsx(R, D, A); }
+  catch (e) { toast('Could not build report: ' + (e.message || e), 'err'); return; }
+  const name = `LPG_Report_${R.from}_to_${R.to}.${fmt}`;
+  const line = l => { const r = A.find(x => x[0] === l); return r ? `${l}: ${num(r[2], 2)}` : ''; };
+  const summary = [rpTitle(R), line('Total Cylinders Filled'), line('Total Production'), line('Filling Accuracy (avg)'), line('Trucks In'), line('Trucks Out'), line('Plant Stops'), line('Plant Downtime')].filter(Boolean).join('\n');
+  await audit('REPORT_' + mode.toUpperCase(), name);
+  if (mode === 'share') {
+    const file = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name, text: summary }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    downloadBlob(blob, name); toast('Sharing files is not supported here — file downloaded. Attach it in WhatsApp / Email.'); return;
+  }
+  downloadBlob(blob, name);
+  const note = `\n\n(Attached file: ${name})`;
+  if (mode === 'email') window.open(`mailto:?subject=${encodeURIComponent(rpTitle(R))}&body=${encodeURIComponent(summary + note)}`, '_blank');
+  if (mode === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(summary + note), '_blank');
+  if (mode !== 'download') toast('File downloaded — attach it to the message that just opened.');
+}
+
+function updateReportPreview() {
+  const box = $('#rpPreview'); if (!box) return;
+  const R = rpRange(), D = rpData(R.from, R.to), A = rpAnalysis(R);
+  const f = p => `<span class="${p > 0.5 ? 'up' : p < -0.5 ? 'down' : ''}">${p > 0 ? '+' : ''}${num(p, 1)}%</span>`;
+  box.innerHTML = `
+    <div class="mini" style="margin:4px 0 10px">Period: <b>${R.from}</b> → <b>${R.to}</b> (${R.len} day${R.len > 1 ? 's' : ''}) · compared with ${R.prevFrom} → ${R.prevTo}</div>
+    <div class="row" style="margin-bottom:12px;flex-wrap:wrap">${SECTIONS.map(([k, l]) => `<span class="tag info">${l}: ${D[k].length}</span>`).join('')}</div>
+    <div class="table-wrap" style="max-height:340px"><table><thead><tr><th>Analysis</th><th>Unit</th><th>Current</th><th>Previous</th><th>Change</th></tr></thead>
+    <tbody>${A.map(r => `<tr><td>${esc(r[0])}</td><td class="mini">${r[1]}</td><td><b>${num(r[2], 2)}</b></td><td>${num(r[3], 2)}</td><td>${f(r[4])}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderReports(v) {
+  const R = state.rp = state.rp || { type: 'monthly', date: today(), from: '', to: '', fmt: 'xlsx' };
+  const inp = 'padding:10px 12px;border-radius:10px;border:1px solid var(--stroke);background:rgba(255,255,255,.06);color:var(--txt);width:100%';
+  v.innerHTML = `
+    <div class="card hl">
+      <div class="card-h"><h3>📑 Reports &amp; Export (Admin)</h3></div>
+      <div class="fgrid">
+        <div class="field"><label>Report type</label><select data-rp="type">${[['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['custom', 'Custom range']].map(([a, b]) => `<option value="${a}" ${R.type === a ? 'selected' : ''}>${b}</option>`).join('')}</select></div>
+        <div class="field"><label>${R.type === 'custom' ? 'From' : 'Pick any date in the period'}</label><input data-rp="${R.type === 'custom' ? 'from' : 'date'}" type="date" value="${R.type === 'custom' ? (R.from || R.date) : R.date}"/></div>
+        <div class="field ${R.type === 'custom' ? '' : 'hidden'}"><label>To</label><input data-rp="to" type="date" value="${R.to || R.date}"/></div>
+        <div class="field"><label>File format</label><select data-rp="fmt"><option value="xlsx" ${R.fmt === 'xlsx' ? 'selected' : ''}>Excel (.xlsx)</option><option value="pdf" ${R.fmt === 'pdf' ? 'selected' : ''}>PDF</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="btn primary sm" data-act="rp-download">⬇ Download</button>
+        <button class="btn ghost sm" data-act="rp-share">📤 Share (WhatsApp / Email…)</button>
+        <button class="btn ghost sm" data-act="rp-email">✉ Email</button>
+        <button class="btn ghost sm" data-act="rp-whatsapp">💬 WhatsApp</button>
+      </div>
+      <div class="hint">The file contains every section (hourly, shift, trucks, manpower, plant stops, plant timings, consumables) plus the analysis with % change vs the previous period. <b>Share</b> opens your phone's share sheet with the file attached. Email / WhatsApp buttons download the file and open a pre-filled message — attach the downloaded file.</div>
+      <div id="rpPreview"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>📥 Import previous data from Excel</h3><button class="btn ghost sm" data-act="imp-sample">⬇ Download sample Excel</button></div>
+      <div class="mini" style="margin-bottom:10px">Download the sample, fill your old data in the same sheets and columns (dates as YYYY-MM-DD, times as HH:MM), then upload it. Existing hourly, shift and weekly records for the same date/hour/shift/week are updated; other sections are added or matched by date &amp; time.</div>
+      <div class="row" style="flex-wrap:wrap"><input id="impFile" type="file" accept=".xlsx,.xls" style="${inp};max-width:360px"/><button class="btn primary sm" data-act="imp-preview">Preview &amp; Import</button></div>
+    </div>`;
+  updateReportPreview();
+}
+
+/* ---------- Excel import ---------- */
+const NUMS = (arr) => arr.map(([h, k]) => [h, k, 'n']);
+const FILL_COLS = [['14.2 Kg', 'c142'], ['19 Kg', 'c19'], ['35 Kg', 'c35'], ['47 Kg', 'c47'], ['5 Kg', 'c5'], ['422 Kg', 'c422'], ['Total MT', 'totalMT'], ['Accuracy %', 'accuracy'], ['DPT Generated', 'dptGen'], ['DPT Received', 'dptRecv'], ['HR Generated', 'hrGen'], ['Evacuation Done', 'evac'], ['SQC Done', 'sqc'], ['Filling Loss kg', 'loss']];
+const IMPORT_SCHEMAS = {
+  'Hourly': { col: 'hourly', key: ['date', 'hour'], cols: [['Date', 'date', 'd'], ['Hour (00-23)', 'hour', 'h'], ...NUMS(FILL_COLS)], sample: ['2026-11-20', '08', 120, 80, 10, 5, 3, 2, 3.5, 99.5, 4, 2, 1, 6, 3, 1.2] },
+  'Shift': { col: 'shift', key: ['date', 'shift'], cols: [['Date', 'date', 'd'], ['Shift (A/B)', 'shift', 'u'], ['Total Cylinders', 'totalCyl', 'n'], ...NUMS(FILL_COLS)], sample: ['2026-11-20', 'A', 1500, 900, 400, 80, 60, 40, 20, 38.5, 99.6, 30, 12, 6, 25, 14, 8.4] },
+  'Trucks': { col: 'trucks', key: ['date', 'time', 'direction', 'vehicle'], cols: [['Date', 'date', 'd'], ['Time', 'time', 't'], ['Movement (IN/OUT/EMPTY)', 'direction', 'u'], ['Vehicle No.', 'vehicle', 'u'], ['Invoice / DC', 'invoice', 's'], ['Qty', 'qty', 'n'], ['Remarks', 'remarks', 's']], sample: ['2026-11-20', '09:30', 'IN', 'WB12AB1234', 'INV-1001', 600, 'Empty cylinders'] },
+  'Manpower': { col: 'manpower', key: ['date', 'time', 'contractor', 'shift', 'direction', 'count'], cols: [['Date', 'date', 'd'], ['Time', 'time', 't'], ['Contractor', 'contractor', 's'], ['Shift (A/B)', 'shift', 'u'], ['Movement (IN/OUT)', 'direction', 'u'], ['Persons', 'count', 'n']], sample: ['2026-11-20', '06:00', 'ABC Contractors', 'A', 'IN', 25] },
+  'Plant Stops': { col: 'stops', key: ['date', 'stopTime'], cols: [['Stop Date', 'date', 'd'], ['Stop Time', 'stopTime', 't'], ['Reason', 'reason', 's'], ['Details', 'details', 's'], ['Resume Date', 'resumeDate', 'd'], ['Resume Time', 'resumeTime', 't'], ['Resume Remarks', 'resumeNote', 's']], sample: ['2026-11-20', '14:10', 'Power failure', 'Grid outage', '2026-11-20', '14:55', 'Power restored'] },
+  'Weekly Consumables': { col: 'weekly', key: ['weekStart'], cols: [['Week Start (Monday)', 'weekStart', 'd'], ...CONSUMABLES.map(c => [c.l, c.k, 'n'])], sample: ['2026-11-16', ...CONSUMABLES.map(() => 10)] },
+};
+const nk = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const xlDate = v => {
+  if (typeof v === 'number') return new Date(Math.round((Math.floor(v) - 25569) * 864e5)).toISOString().slice(0, 10);
+  v = String(v || '').trim(); let m;
+  if ((m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+  if ((m = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/))) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${pad2(m[2])}-${pad2(m[1])}`;
+  return '';
+};
+const xlTime = v => {
+  if (typeof v === 'number') { const mins = Math.round((v - Math.floor(v)) * 1440) % 1440; return `${pad2(Math.floor(mins / 60))}:${pad2(mins % 60)}`; }
+  const m = String(v || '').match(/(\d{1,2}):(\d{2})/); return m ? `${pad2(m[1])}:${m[2]}` : '';
+};
+const xlHour = v => { if (v === '' || v == null) return ''; const n = typeof v === 'number' ? (v < 1 ? Math.round(v * 24) : v) : parseInt(String(v), 10); return isNaN(n) ? '' : pad2(n % 24); };
+function convCell(v, t) {
+  if (t === 'd') return xlDate(v); if (t === 't') return xlTime(v); if (t === 'h') return xlHour(v);
+  if (t === 'n') return Number(v || 0) || 0; if (t === 'u') return String(v || '').trim().toUpperCase();
+  return String(v ?? '').trim();
+}
+async function downloadSample() {
+  await loadXlsx();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['LPG Plant — Data import sample'], [''],
+    ['• Keep sheet names and column headings exactly as given. Delete sheets you do not need.'],
+    ['• Dates: YYYY-MM-DD (e.g. 2026-11-20). Times: HH:MM (24h). Hour: 00–23. Shift: A or B.'],
+    ['• Movement: IN / OUT / EMPTY for Trucks; IN / OUT for Manpower.'],
+    ['• Hourly: Total cylinders is calculated from the cylinder categories automatically.'],
+    ['• Replace the sample row in each sheet with your own data (add more rows below it).'],
+  ]), 'Instructions');
+  Object.entries(IMPORT_SCHEMAS).forEach(([name, sc]) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([sc.cols.map(c => c[0]), sc.sample]), name.slice(0, 31)));
+  downloadBlob(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/octet-stream' }), 'LPG_Import_Sample.xlsx');
+}
+async function parseImport(file) {
+  await loadXlsx();
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  const out = {};
+  Object.entries(IMPORT_SCHEMAS).forEach(([name, sc]) => {
+    const sn = wb.SheetNames.find(n => nk(n) === nk(name)); if (!sn) return;
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: '' });
+    if (rows.length < 2) return;
+    const idx = {}; rows[0].forEach((h, i) => { idx[nk(h)] = i; });
+    const recs = []; let bad = 0;
+    rows.slice(1).forEach(r => {
+      if (r.every(c => c === '' || c == null)) return;
+      const rec = {};
+      sc.cols.forEach(([h, k, t]) => { const i = idx[nk(h)]; rec[k] = i === undefined ? (t === 'n' ? 0 : '') : convCell(r[i], t); });
+      if (sc.key.some(k => rec[k] === '' || rec[k] == null)) { bad++; return; }
+      recs.push(rec);
+    });
+    out[name] = { sc, recs, bad };
+  });
+  return out;
+}
+async function applyImport(parsed) {
+  const by = currentUser.username; let total = 0;
+  for (const [name, { sc, recs }] of Object.entries(parsed)) {
+    const arr = [...Store.get(sc.col)];
+    recs.forEach(rec => {
+      if (sc.col === 'hourly' || sc.col === 'shift') { const s = ['c142', 'c19', 'c35', 'c47', 'c5', 'c422'].reduce((a, k) => a + Number(rec[k] || 0), 0); if (!rec.totalCyl) rec.totalCyl = s; }
+      if (sc.col === 'manpower') rec.direction = rec.direction === 'OUT' ? 'OUT' : 'IN';
+      if (sc.col === 'stops') rec.status = rec.resumeDate && rec.resumeTime ? 'closed' : 'open';
+      const i = arr.findIndex(x => sc.key.every(k => String(x[k] ?? '') === String(rec[k] ?? '')));
+      const meta = { _by: by, _at: Date.now(), _import: true };
+      if (i >= 0) arr[i] = { ...arr[i], ...rec, ...meta, id: arr[i].id }; else arr.push({ ...rec, ...meta, id: uid() });
+      total++;
+    });
+    await Store.save(sc.col, arr);
+    if (sc.col === 'manpower') {
+      const have = new Set(contractorNames().map(n => n.toLowerCase()));
+      const add = [...new Set(recs.map(r => r.contractor).filter(Boolean))].filter(n => !have.has(n.toLowerCase()));
+      if (add.length) await Store.save('contractors', [...Store.get('contractors'), ...add.map(n => ({ id: uid(), name: n }))]);
+    }
+  }
+  await audit('IMPORT_EXCEL', `${total} records`);
+  toast(`Imported ${total} records`);
+}
+async function openImportPreview() {
+  const f = $('#impFile') && $('#impFile').files[0];
+  if (!f) { toast('Choose an Excel file first', 'err'); return; }
+  let parsed;
+  try { parsed = await parseImport(f); } catch (e) { toast('Could not read the file: ' + (e.message || e), 'err'); return; }
+  const names = Object.keys(parsed);
+  if (!names.length) { toast('No matching sheets found. Use the sample file sheet names.', 'err'); return; }
+  const body = `<div class="table-wrap"><table><thead><tr><th>Sheet</th><th>Rows to import</th><th>Skipped (missing date/key)</th></tr></thead><tbody>
+    ${names.map(n => `<tr><td>${esc(n)}</td><td><b>${parsed[n].recs.length}</b></td><td>${parsed[n].bad}</td></tr>`).join('')}</tbody></table></div>
+    <div class="hint">Matching records (same date/hour/shift/week etc.) will be updated. This cannot be undone except by deleting records.</div>`;
+  openModal('Import preview — ' + f.name, body, async () => { await applyImport(parsed); render(); }, '📥 Import Data');
+}
+
+['input', 'change'].forEach(ev => document.addEventListener(ev, e => {
+  const t = e.target; if (!t.dataset || !t.dataset.rp || !state.rp) return;
+  state.rp[t.dataset.rp] = t.value;
+  if (ev === 'change' && t.dataset.rp === 'type') { render(); return; }
+  if (ev === 'change' && t.dataset.rp === 'fmt') return;
+  updateReportPreview();
+}));
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || !currentUser || currentUser.role !== 'admin') return;
+  const a = el.dataset.act;
+  if (a === 'rp-download') rpExport('download');
+  if (a === 'rp-share') rpExport('share');
+  if (a === 'rp-email') rpExport('email');
+  if (a === 'rp-whatsapp') rpExport('whatsapp');
+  if (a === 'imp-sample') downloadSample().catch(x => toast('Could not build sample: ' + x.message, 'err'));
+  if (a === 'imp-preview') openImportPreview();
+});
+
+function fbFriendly(err, dflt) {
+  const raw = ((err && (err.code || '')) + ' ' + (err && err.message || '')).trim();
+  if (/api-key|invalid-api-key|network-request-failed|configuration-not-found|app-not-authorized|unavailable/i.test(raw))
+    return 'Firebase configuration is invalid or cannot be reached (' + (err.code || 'error') + '). Press "Reset Firebase config & retry" below to start again.';
+  return (err && err.message) ? err.message.replace('Firebase: ', '') : dflt;
+}
+document.addEventListener('click', async e => {
+  if (!e.target.closest('[data-act="fb-reset"]')) return;
+  try { localStorage.removeItem(FB_KEY); localStorage.removeItem(SETUP_KEY); localStorage.removeItem('lpg_session'); localStorage.setItem(FB_SKIP, '1'); } catch (x) {}
+  if (FB_ENABLED && fb.auth) { try { await fb.auth.signOut(); } catch (x) {} }
+  toast('Firebase config reset — restarting in Local Mode');
+  setTimeout(() => location.reload(), 800);
+});
+
+/* ============================================================
+   PUSH / PULL: local copy  <->  Firebase cloud
+   ============================================================ */
+const SYNC_COLS = COLLECTIONS.filter(c => !['users', 'audit'].includes(c));
+const storeKeyOf = c => String(c.storeKey || 'data').replace(/[^A-Za-z0-9_-]/g, '') || 'data';
+function readLocalCopy() {
+  if (!FB_ENABLED) return Store.cols;
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (e) { return {}; }
+}
+function writeLocalCopy(obj) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch (e) { throw new Error('Could not write to this device’s storage.'); }
+  if (!FB_ENABLED) { Store.cols = obj; COLLECTIONS.forEach(c => { if (!Array.isArray(Store.cols[c])) Store.cols[c] = []; Store._fire(c); }); }
+}
+function mergeItems(base, inc) {
+  const key = x => x.id || JSON.stringify(x), m = new Map(base.map(x => [key(x), x]));
+  inc.forEach(x => { const b = m.get(key(x)); if (!b || (x._at || 0) >= (b._at || 0)) m.set(key(x), x); });
+  return [...m.values()];
+}
+async function openCloud(cfg, creds) {
+  if (!creds) return { db: fb.db, close: async () => {} };
+  if (!/^[a-zA-Z0-9._-]{3,20}$/.test(creds.u || '')) throw new Error('Username: 3–20 characters, letters/numbers/._- only.');
+  if ((creds.p || '').length < 6) throw new Error('Password must be at least 6 characters.');
+  await loadFbSdk();
+  const app = firebase.initializeApp(cfg, 'sync' + Date.now()), auth = app.auth(), db = app.firestore();
+  try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
+  const close = async () => { try { await auth.signOut(); } catch (e) {} try { await app.delete(); } catch (e) {} };
+  try {
+    const email = toEmail(creds.u); let created = false;
+    try { await auth.signInWithEmailAndPassword(email, creds.p); }
+    catch (e) {
+      if (!/user-not-found|invalid-credential|invalid-login/.test(e.code || '')) throw e;
+      try { await auth.createUserWithEmailAndPassword(email, creds.p); created = true; }
+      catch (e2) { if (e2.code === 'auth/email-already-in-use') throw new Error('Wrong password for this cloud account.'); throw e2; }
+    }
+    const ref = db.collection(storeKeyOf(cfg)).doc('users'), snap = await ref.get();
+    const users = snap.exists ? (snap.data().items || []) : [];
+    const me = users.find(u => (u.username || '').toLowerCase() === creds.u.toLowerCase());
+    if (!users.some(u => u.role === 'admin')) {
+      users.push({ id: uid(), username: creds.u, name: creds.u, role: 'admin', active: true, perms: PAGES.map(p => p.id), pass: null, createdAt: Date.now() });
+      await ref.set({ items: users });
+    } else if (!me || me.role !== 'admin') {
+      if (created) { try { await auth.currentUser.delete(); } catch (x) {} }
+      throw new Error('This account is not an admin of the cloud project.');
+    }
+    return { db, close };
+  } catch (e) { await close(); throw e; }
+}
+function openSyncDialog(kind) {
+  const cfg = readFbBoxes(); if (!cfg) return;
+  const push = kind === 'push';
+  const live = FB_ENABLED && fb.auth && fb.auth.currentUser && firebaseConfig.projectId === cfg.projectId;
+  const body = `<div class="mini" style="margin-bottom:12px">${push ? 'Upload this device’s data to' : 'Download data from'} Firebase project <b>${esc(cfg.projectId)}</b>${push ? '' : ' into this device'}. Users and the audit log are not transferred.</div>
+    <div class="fgrid">
+      ${live ? '' : `<div class="field"><label>Cloud admin username</label><input id="sy_u" type="text" autocomplete="off"/></div>
+      <div class="field"><label>Cloud admin password</label><input id="sy_p" type="password" autocomplete="off"/></div>`}
+      <div class="field full"><label>If data already exists at the destination</label>
+        <select id="sy_m"><option value="merge">Merge — keep both, newer record wins</option><option value="replace">Replace — destination becomes an exact copy</option></select></div>
+    </div>
+    ${live ? '' : '<div class="hint">First time? Type a new username and password — the cloud admin account is created for you, and you sign in with it after applying the config.</div>'}`;
+  openModal(push ? '⬆ Push data to cloud' : '⬇ Pull data from cloud', body, async () => {
+    const mode = $('#sy_m').value;
+    const cloud = await openCloud(cfg, live ? null : { u: ($('#sy_u').value || '').trim(), p: $('#sy_p').value || '' });
+    try {
+      const sk = storeKeyOf(cfg), ref = c => cloud.db.collection(sk).doc(c), local = readLocalCopy();
+      const read = async c => { const s = await ref(c).get(); return s.exists ? (s.data().items || []) : []; };
+      let n = 0;
+      if (push) {
+        const plan = {};
+        for (const c of SYNC_COLS) {
+          const li = local[c] || []; if (!li.length && mode === 'merge') continue;
+          plan[c] = mode === 'merge' ? mergeItems(await read(c), li) : li; n += li.length;
+          if (JSON.stringify(plan[c]).length > 950000) throw new Error(`"${c}" is too large for one Firestore document (1 MB limit).`);
+        }
+        if (!n) throw new Error('This device has no data to push.');
+        for (const c of Object.keys(plan)) await ref(c).set({ items: plan[c] });
+      } else {
+        const next = { ...local };
+        for (const c of SYNC_COLS) { const ci = await read(c); n += ci.length; next[c] = mode === 'merge' ? mergeItems(local[c] || [], ci) : ci; }
+        if (!n) throw new Error('The cloud has no data to pull.');
+        writeLocalCopy(next);
+      }
+      await audit(push ? 'CLOUD_PUSH' : 'CLOUD_PULL', `${n} records (${mode})`);
+      const msg = `${push ? 'Pushed' : 'Pulled'} ${n} records (${mode}).` + (!push && FB_ENABLED ? ' Saved as this device’s local copy.' : '');
+      toast(msg); fbMsg('✔ ' + msg, true);
+      if (!push) render();
+    } finally { await cloud.close(); }
+  }, push ? '⬆ Push now' : '⬇ Pull now');
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act="fb-push"],[data-act="fb-pull"]');
+  if (el && currentUser && currentUser.role === 'admin') openSyncDialog(el.dataset.act === 'fb-push' ? 'push' : 'pull');
+});
+
+/* ---------- CSV export ---------- */
+function exportCSV(col) {
+  let rows = [], name = col;
+  if (col === 'analytics') {
+    const R = rangeFor(state.analytics.period);
+    rows = METRICS.map(m => ({
+      Metric: m.l, Unit: m.u,
+      Current: aggFilling(R.curFrom, R.curTo, m.k),
+      Previous: aggFilling(R.prevFrom, R.prevTo, m.k),
+      ChangePct: pctChange(aggFilling(R.curFrom, R.curTo, m.k), aggFilling(R.prevFrom, R.prevTo, m.k)).toFixed(2)
+    }));
+  } else {
+    rows = Store.get(col);
+  }
+  if (!rows.length) { toast('Nothing to export', 'err'); return; }
+  const keys = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(k => k !== 'pass');
+  const csv = [keys.join(','), ...rows.map(r => keys.map(k => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lpg_${name}_${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('CSV exported');
+}
+
+/* ============================================================
+   17. BOOTSTRAP
+   ============================================================ */
+(async function boot() {
+  // local store
+  await loadSavedFirebase();
+  await Store.initLocal();
+
+  // seed default admin in local mode
+  if (!FB_ENABLED) {
+    try {
+      if (Store.get('users').length === 0) {
+        const pass = await hashPw('admin', 'admin123');
+        await Store.save('users', [{
+          id: uid(), username: 'admin', name: 'Plant Administrator',
+          role: 'admin', active: true, pass,
+          perms: PAGES.map(p => p.id), createdAt: Date.now()
+        }]);
+      }
+    } catch (e) { console.warn('seed failed', e); }
+  }
+
+  // Firebase: subscribe after auth state is known
+  if (FB_ENABLED) {
+    fb.auth.onAuthStateChanged(async user => {
+      if (user) {
+        Store.subscribeAll();
+        setTimeout(async () => {
+          await Store.ready('users');
+          const uname = localStorage.getItem('lpg_session');
+          const p = Store.get('users').find(x => x.username.toLowerCase() === (uname || '').toLowerCase());
+          if (p && !currentUser && p.active) { currentUser = p; await enterApp(); }
+        }, 400);
+      }
+    });
+  }
+
+  setAuthTab('admin');
+  ['#loginMsg', '#regMsg'].forEach(sel => $(sel).insertAdjacentHTML('afterend', `<div class="hint fbResetBox ${FB_ENABLED ? '' : 'hidden'}">Cannot connect to Firebase or login failing? <button type="button" class="btn ghost sm" data-act="fb-reset">↺ Reset Firebase config &amp; retry</button></div>`));
+  if (!isSetupComplete()) { $('#loginMsg').className = 'msg ok'; $('#loginMsg').textContent = 'First-time setup: the administrator must sign in first and configure Firebase in Settings. User login opens after that.'; }
+  const restored = await tryRestore();
+  if (!restored) {
+    $('#app').classList.add('hidden');
+    $('#authScreen').classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>
